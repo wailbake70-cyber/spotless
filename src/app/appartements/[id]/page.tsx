@@ -90,7 +90,7 @@ export default function ApartmentDetailPage() {
     <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-black cursor-pointer">
+        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
         <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
@@ -102,10 +102,10 @@ export default function ApartmentDetailPage() {
       <Card>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="font-heading text-xl font-bold text-brand-black">{apt.name}</h1>
+            <h1 className="font-heading text-xl font-bold text-text-primary">{apt.name}</h1>
             <button
               onClick={() => router.push(`/clients/${apt.client_id}`)}
-              className="text-sm text-brand-gold hover:underline cursor-pointer"
+              className="text-sm text-accent-dark hover:underline cursor-pointer"
             >
               {apt.client?.name}
             </button>
@@ -127,7 +127,7 @@ export default function ApartmentDetailPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-              tab === t.key ? 'bg-brand-gold text-brand-black' : 'text-gray-500 hover:text-brand-black'
+              tab === t.key ? 'bg-accent-dark text-white' : 'text-gray-500 hover:text-text-primary'
             }`}
           >
             {t.label}
@@ -149,7 +149,7 @@ export default function ApartmentDetailPage() {
             {apt.special_instructions && (
               <div className="pt-2 border-t border-gray-100">
                 <span className="text-gray-500">Instructions:</span>
-                <p className="mt-1 text-brand-black bg-gray-50 rounded-lg p-3">{apt.special_instructions}</p>
+                <p className="mt-1 text-text-primary bg-gray-50 rounded-lg p-3">{apt.special_instructions}</p>
               </div>
             )}
           </div>
@@ -161,7 +161,7 @@ export default function ApartmentDetailPage() {
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-sm text-gray-600">Prix ménage</span>
-              <span className="font-semibold text-brand-gold text-lg">{formatMAD(Number(apt.price_menage))}</span>
+              <span className="font-semibold text-accent-dark text-lg">{formatMAD(Number(apt.price_menage))}</span>
             </div>
             <div className="space-y-2 text-sm">
               <CostRow label="Femme de ménage" value={Number(apt.cost_femme)} />
@@ -169,7 +169,7 @@ export default function ApartmentDetailPage() {
               <CostRow label="Produits" value={Number(apt.cost_produits)} />
               <CostRow label="Pressing" value={Number(apt.cost_pressing)} />
             </div>
-            <div className="flex justify-between items-center pt-3 border-t-2 border-brand-gold/20">
+            <div className="flex justify-between items-center pt-3 border-t-2 border-accent/20">
               <span className="font-semibold">Marge nette</span>
               <div className="text-right">
                 <span className={`font-bold text-lg ${margin >= 0 ? 'text-status-termine' : 'text-status-annule'}`}>
@@ -188,7 +188,7 @@ export default function ApartmentDetailPage() {
             {/* Door Access */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Key size={16} className="text-brand-gold" />
+                <Key size={16} className="text-accent-dark" />
                 <span className="font-medium text-sm">Accès</span>
               </div>
               <p className="text-sm text-gray-600 mb-2">{apt.access_notes || apt.access_type || '—'}</p>
@@ -200,7 +200,7 @@ export default function ApartmentDetailPage() {
             {/* WiFi */}
             <div className="pt-3 border-t border-gray-100">
               <div className="flex items-center gap-2 mb-2">
-                <Wifi size={16} className="text-brand-gold" />
+                <Wifi size={16} className="text-accent-dark" />
                 <span className="font-medium text-sm">WiFi</span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -214,7 +214,7 @@ export default function ApartmentDetailPage() {
             {apt.pressing_contact && (
               <div className="pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-2 mb-2">
-                  <Wrench size={16} className="text-brand-gold" />
+                  <Wrench size={16} className="text-accent-dark" />
                   <span className="font-medium text-sm">Pressing</span>
                 </div>
                 <CopyButton text={apt.pressing_contact} label={apt.pressing_contact} />
@@ -239,7 +239,7 @@ export default function ApartmentDetailPage() {
                   <div className="flex items-center gap-2">
                     <StatusBadge status={t.status} />
                     {t.quality_rating && (
-                      <span className="text-sm text-brand-gold">{'★'.repeat(t.quality_rating)}</span>
+                      <span className="text-sm text-accent-dark">{'★'.repeat(t.quality_rating)}</span>
                     )}
                   </div>
                 </div>
@@ -295,7 +295,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between py-1.5 border-b border-gray-50">
       <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-brand-black">{value}</span>
+      <span className="font-medium text-text-primary">{value}</span>
     </div>
   );
 }

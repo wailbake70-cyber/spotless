@@ -13,7 +13,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#0A0A0A',
+  themeColor: '#FFFFFF',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,12 +23,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-dvh bg-brand-cream font-body text-brand-black">
-        <Suspense fallback={<div className="min-h-dvh bg-brand-cream" />}>
+      <body className="min-h-dvh bg-bg-secondary font-body text-text-primary">
+        <Suspense fallback={<div className="min-h-dvh bg-bg-secondary" />}>
           <AppShell>{children}</AppShell>
         </Suspense>
       </body>

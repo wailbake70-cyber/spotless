@@ -32,12 +32,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-cream flex items-center justify-center p-4">
+    <div className="min-h-screen bg-bg-secondary flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="font-heading text-3xl font-bold text-brand-black tracking-tight">
-            SPOT<span className="text-brand-gold">LESS</span>
+          <h1 className="font-heading text-3xl font-bold text-text-primary tracking-tight">
+            SPOT<span className="text-accent-dark">LESS</span>
           </h1>
           <p className="text-sm text-gray-500 mt-1">Gestion des turnovers</p>
         </div>

@@ -156,7 +156,7 @@ export default function TurnoverDetailPage() {
     <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-black cursor-pointer">
+        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
         <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
@@ -168,13 +168,13 @@ export default function TurnoverDetailPage() {
       <Card>
         <div className="flex items-start justify-between mb-2">
           <div>
-            <h1 className="font-heading text-xl font-bold text-brand-black">
+            <h1 className="font-heading text-xl font-bold text-text-primary">
               {apt?.name || 'Turnover'}
             </h1>
             {apt?.client && (
               <button
                 onClick={() => router.push(`/clients/${apt.client_id}`)}
-                className="text-sm text-brand-gold hover:underline cursor-pointer"
+                className="text-sm text-accent-dark hover:underline cursor-pointer"
               >
                 {apt.client.name}
               </button>
@@ -185,7 +185,7 @@ export default function TurnoverDetailPage() {
 
         <div className="flex flex-wrap gap-3 text-sm text-gray-600">
           <span className="flex items-center gap-1">
-            <Calendar size={14} className="text-brand-gold" />
+            <Calendar size={14} className="text-accent-dark" />
             {formatDate(turnover.date)}
           </span>
           {turnover.time_start && (
@@ -206,12 +206,12 @@ export default function TurnoverDetailPage() {
           <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-4 text-sm">
             {turnover.guest_checkout && (
               <span className="text-gray-500">
-                Check-out: <span className="text-brand-black font-medium">{turnover.guest_checkout}</span>
+                Check-out: <span className="text-text-primary font-medium">{turnover.guest_checkout}</span>
               </span>
             )}
             {turnover.guest_checkin && (
               <span className="text-gray-500">
-                Check-in: <span className="text-brand-black font-medium">{turnover.guest_checkin}</span>
+                Check-in: <span className="text-text-primary font-medium">{turnover.guest_checkin}</span>
                 {turnover.checkin_time && ` à ${formatTime(turnover.checkin_time)}`}
               </span>
             )}
@@ -227,7 +227,7 @@ export default function TurnoverDetailPage() {
             onClick={() => setTab(t.key)}
             className={cn(
               'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors cursor-pointer',
-              tab === t.key ? 'bg-brand-gold text-brand-black' : 'text-gray-500 hover:text-brand-black'
+              tab === t.key ? 'bg-accent-dark text-white' : 'text-gray-500 hover:text-text-primary'
             )}
           >
             {t.label}
@@ -250,7 +250,7 @@ export default function TurnoverDetailPage() {
             {turnover.notes && (
               <div className="pt-2 border-t border-gray-100">
                 <span className="text-gray-500">Notes:</span>
-                <p className="mt-1 text-brand-black bg-gray-50 rounded-lg p-3">{turnover.notes}</p>
+                <p className="mt-1 text-text-primary bg-gray-50 rounded-lg p-3">{turnover.notes}</p>
               </div>
             )}
           </div>
@@ -264,7 +264,7 @@ export default function TurnoverDetailPage() {
             {/* Door Access */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Key size={16} className="text-brand-gold" />
+                <Key size={16} className="text-accent-dark" />
                 <span className="font-medium text-sm">Accès</span>
               </div>
               <p className="text-sm text-gray-600 mb-2">{apt.access_notes || apt.access_type || '—'}</p>
@@ -276,7 +276,7 @@ export default function TurnoverDetailPage() {
             {/* WiFi */}
             <div className="pt-3 border-t border-gray-100">
               <div className="flex items-center gap-2 mb-2">
-                <Wifi size={16} className="text-brand-gold" />
+                <Wifi size={16} className="text-accent-dark" />
                 <span className="font-medium text-sm">WiFi</span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ export default function TurnoverDetailPage() {
             {apt.pressing_contact && (
               <div className="pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-2 mb-2">
-                  <Wrench size={16} className="text-brand-gold" />
+                  <Wrench size={16} className="text-accent-dark" />
                   <span className="font-medium text-sm">Pressing</span>
                 </div>
                 <CopyButton text={apt.pressing_contact} label={apt.pressing_contact} />
@@ -301,7 +301,7 @@ export default function TurnoverDetailPage() {
             {apt.special_instructions && (
               <div className="pt-3 border-t border-gray-100">
                 <span className="text-sm font-medium text-gray-700">Instructions spéciales</span>
-                <p className="mt-1 text-sm text-brand-black bg-brand-gold/5 rounded-lg p-3 border border-brand-gold/10">
+                <p className="mt-1 text-sm text-text-primary bg-accent-bg rounded-lg p-3 border border-accent/10">
                   {apt.special_instructions}
                 </p>
               </div>
@@ -341,7 +341,7 @@ export default function TurnoverDetailPage() {
                         <Star
                           key={s}
                           size={20}
-                          className={s <= turnover.quality_rating! ? 'text-brand-gold fill-brand-gold' : 'text-gray-200'}
+                          className={s <= turnover.quality_rating! ? 'text-accent-dark fill-accent-dark' : 'text-gray-200'}
                         />
                       ))}
                     </div>
@@ -389,7 +389,7 @@ export default function TurnoverDetailPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-600">Revenu</span>
-                <span className="font-semibold text-brand-gold text-lg">{formatMAD(Number(turnover.revenue))}</span>
+                <span className="font-semibold text-accent-dark text-lg">{formatMAD(Number(turnover.revenue))}</span>
               </div>
               <div className="space-y-2 text-sm">
                 <CostRow label="Femme de ménage" value={Number(turnover.cost_femme)} />
@@ -400,7 +400,7 @@ export default function TurnoverDetailPage() {
                   <CostRow label={turnover.cost_other_label || 'Autre'} value={Number(turnover.cost_other)} />
                 )}
               </div>
-              <div className="flex justify-between items-center pt-3 border-t-2 border-brand-gold/20">
+              <div className="flex justify-between items-center pt-3 border-t-2 border-accent/20">
                 <span className="font-semibold">Marge nette</span>
                 <div className="text-right">
                   <span className={`font-bold text-lg ${margin >= 0 ? 'text-status-termine' : 'text-status-annule'}`}>
@@ -415,7 +415,7 @@ export default function TurnoverDetailPage() {
           {/* Payment Status */}
           <Card>
             <CardTitle className="mb-3">
-              <DollarSign size={16} className="inline mr-1 text-brand-gold" />
+              <DollarSign size={16} className="inline mr-1 text-accent-dark" />
               Paiements
             </CardTitle>
             <div className="space-y-3">
@@ -432,8 +432,8 @@ export default function TurnoverDetailPage() {
                 onToggle={() => togglePayment('is_paid_to_cleaner')}
               />
               {turnover.cleaner_got_prime && (
-                <div className="flex items-center gap-2 text-sm text-brand-gold">
-                  <Star size={14} className="fill-brand-gold" />
+                <div className="flex items-center gap-2 text-sm text-accent-dark">
+                  <Star size={14} className="fill-accent-dark" />
                   Prime qualité accordée
                 </div>
               )}
@@ -562,7 +562,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between py-1.5 border-b border-gray-50">
       <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-brand-black">{value}</span>
+      <span className="font-medium text-text-primary">{value}</span>
     </div>
   );
 }

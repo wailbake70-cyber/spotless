@@ -62,7 +62,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl lg:text-3xl font-bold text-brand-black">
+          <h1 className="font-heading text-2xl lg:text-3xl font-bold text-text-primary">
             {formatDay(new Date())}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -78,11 +78,11 @@ export default function Dashboard() {
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="text-center">
-          <div className="text-2xl font-bold text-brand-gold">{weekStats.count}</div>
+          <div className="text-2xl font-bold text-accent-dark">{weekStats.count}</div>
           <div className="text-xs text-gray-500 mt-1">Cette semaine</div>
         </Card>
         <Card className="text-center">
-          <div className="text-2xl font-bold text-brand-black">{formatMAD(weekStats.revenue)}</div>
+          <div className="text-2xl font-bold text-text-primary">{formatMAD(weekStats.revenue)}</div>
           <div className="text-xs text-gray-500 mt-1">Revenus</div>
         </Card>
         <Card className="text-center">
@@ -95,7 +95,7 @@ export default function Dashboard() {
       <section>
         <CardHeader>
           <CardTitle>
-            <Calendar size={20} className="inline mr-2 text-brand-gold" />
+            <Calendar size={20} className="inline mr-2 text-accent-dark" />
             Turnovers du jour
           </CardTitle>
         </CardHeader>
@@ -125,7 +125,7 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-brand-black">
+                      <span className="font-semibold text-text-primary">
                         {turnover.apartment?.name || 'Appartement'}
                       </span>
                       <StatusBadge status={turnover.status} />
@@ -144,7 +144,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold text-brand-gold">
+                    <div className="font-semibold text-accent-dark">
                       {formatMAD(Number(turnover.revenue))}
                     </div>
                   </div>
@@ -162,7 +162,7 @@ export default function Dashboard() {
             <div className="flex items-start gap-3">
               <AlertTriangle size={20} className="text-status-en-cours mt-0.5 shrink-0" />
               <div>
-                <p className="font-medium text-brand-black">
+                <p className="font-medium text-text-primary">
                   {weekStats.pending} paiement{weekStats.pending > 1 ? 's' : ''} en attente
                 </p>
                 <p className="text-sm text-gray-600 mt-0.5">

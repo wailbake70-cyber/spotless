@@ -79,7 +79,7 @@ export default function CleanerDetailPage() {
     <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-black cursor-pointer">
+        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
         <div className="flex gap-2">
@@ -96,7 +96,7 @@ export default function CleanerDetailPage() {
       <Card>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="font-heading text-xl font-bold text-brand-black">{cleaner.name}</h1>
+            <h1 className="font-heading text-xl font-bold text-text-primary">{cleaner.name}</h1>
             {cleaner.neighborhood && (
               <p className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                 <MapPin size={14} /> {cleaner.neighborhood}
@@ -106,7 +106,7 @@ export default function CleanerDetailPage() {
           {cleaner.phone && (
             <a
               href={`tel:${cleaner.phone}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-gold/10 text-brand-gold-dark text-sm font-medium hover:bg-brand-gold/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-bg text-accent-dark text-sm font-medium hover:bg-accent/20 transition-colors"
             >
               <Phone size={14} /> Appeler
             </a>
@@ -128,17 +128,17 @@ export default function CleanerDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="text-center">
-          <div className="text-lg font-bold text-brand-gold">{completedCount}</div>
+          <div className="text-lg font-bold text-accent-dark">{completedCount}</div>
           <div className="text-xs text-gray-500">Turnovers</div>
         </Card>
         <Card className="text-center">
-          <div className="text-lg font-bold text-brand-black">{formatMAD(totalEarned)}</div>
+          <div className="text-lg font-bold text-text-primary">{formatMAD(totalEarned)}</div>
           <div className="text-xs text-gray-500">Total versé</div>
         </Card>
         <Card className="text-center">
           <div className="flex items-center justify-center gap-1">
-            <Star size={14} className="text-brand-gold fill-brand-gold" />
-            <span className="text-lg font-bold text-brand-black">
+            <Star size={14} className="text-accent-dark fill-accent-dark" />
+            <span className="text-lg font-bold text-text-primary">
               {avgRating > 0 ? avgRating.toFixed(1) : '—'}
             </span>
           </div>
@@ -150,7 +150,7 @@ export default function CleanerDetailPage() {
       {turnovers.length > 0 && (
         <section>
           <CardTitle className="mb-3">
-            <Calendar size={18} className="inline mr-2 text-brand-gold" />
+            <Calendar size={18} className="inline mr-2 text-accent-dark" />
             Derniers turnovers
           </CardTitle>
           <div className="space-y-2">
@@ -168,7 +168,7 @@ export default function CleanerDetailPage() {
                 <div className="flex items-center gap-2">
                   <StatusBadge status={t.status} />
                   {t.quality_rating && (
-                    <span className="text-sm text-brand-gold">{'★'.repeat(t.quality_rating)}</span>
+                    <span className="text-sm text-accent-dark">{'★'.repeat(t.quality_rating)}</span>
                   )}
                 </div>
               </Card>

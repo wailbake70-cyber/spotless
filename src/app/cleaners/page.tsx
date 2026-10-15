@@ -86,7 +86,7 @@ export default function CleanersPage() {
           placeholder="Rechercher..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold bg-white"
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent bg-white"
         />
       </div>
 
@@ -113,7 +113,7 @@ export default function CleanersPage() {
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-brand-black">{cleaner.name}</span>
+                    <span className="font-semibold text-text-primary">{cleaner.name}</span>
                   </div>
                   {cleaner.neighborhood && (
                     <p className="flex items-center gap-1 text-sm text-gray-500">
@@ -137,7 +137,7 @@ export default function CleanersPage() {
                   <a
                     href={`tel:${cleaner.phone}`}
                     onClick={e => e.stopPropagation()}
-                    className="p-2 text-brand-gold hover:bg-brand-gold/10 rounded-lg transition-colors ml-2"
+                    className="p-2 text-accent-dark hover:bg-accent-bg rounded-lg transition-colors ml-2"
                   >
                     <Phone size={18} />
                   </a>

@@ -104,7 +104,7 @@ export default function NewTurnoverPage() {
     <div className="p-4 lg:p-6 space-y-4 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-black cursor-pointer">
+        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
         <h1 className="font-heading text-lg font-bold">Nouveau turnover</h1>
@@ -130,7 +130,7 @@ export default function NewTurnoverPage() {
               onChange={(e) => setSelectedAptId(e.target.value)}
             />
             {selectedApt && (
-              <div className="mt-3 p-3 bg-brand-gold/5 rounded-lg border border-brand-gold/10 text-sm space-y-1">
+              <div className="mt-3 p-3 bg-accent-bg rounded-lg border border-accent/10 text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Client</span>
                   <span className="font-medium">{selectedApt.client?.name}</span>
@@ -145,7 +145,7 @@ export default function NewTurnoverPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Prix ménage</span>
-                  <span className="font-semibold text-brand-gold">{formatMAD(Number(selectedApt.price_menage))}</span>
+                  <span className="font-semibold text-accent-dark">{formatMAD(Number(selectedApt.price_menage))}</span>
                 </div>
               </div>
             )}

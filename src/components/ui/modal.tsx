@@ -40,7 +40,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       onClose={onClose}
     >
       <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4 z-10">
-        <h2 className="font-heading text-lg font-semibold text-brand-black">{title}</h2>
+        <h2 className="font-heading text-lg font-semibold text-text-primary">{title}</h2>
         <button
           onClick={onClose}
           className="rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"

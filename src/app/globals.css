@@ -1,36 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand Colors */
-  --color-brand-black: #0A0A0A;
-  --color-brand-gold: #C9A84C;
-  --color-brand-gold-light: #E2C97E;
-  --color-brand-gold-dark: #8A6D2B;
-  --color-brand-cream: #F5F0E8;
+  /* Node-inspired clean colors */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F8F8F6;
+  --color-bg-hover: #F2F2F0;
+  --color-border: #E8E8E6;
+  --color-border-light: #F0F0EE;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted: #9B9B9B;
+
+  /* Accent — green like Node */
+  --color-accent: #B8E986;
+  --color-accent-dark: #8BC34A;
+  --color-accent-bg: #F0FAE5;
 
   /* Status Colors */
-  --color-status-planifie: #3B82F6;
-  --color-status-assigne: #EAB308;
-  --color-status-en-cours: #F97316;
-  --color-status-termine: #22C55E;
-  --color-status-verifie: #10B981;
-  --color-status-annule: #EF4444;
+  --color-status-planifie: #64B5F6;
+  --color-status-assigne: #B8E986;
+  --color-status-en-cours: #FFB74D;
+  --color-status-termine: #81C784;
+  --color-status-verifie: #4DB6AC;
+  --color-status-annule: #E57373;
 
-  /* Stock Colors */
-  --color-stock-ok: #22C55E;
-  --color-stock-bas: #EAB308;
-  --color-stock-epuise: #EF4444;
+  /* Semantic */
+  --color-danger: #E57373;
+  --color-warning: #FFB74D;
+  --color-success: #81C784;
+  --color-info: #64B5F6;
 
   /* Fonts */
-  --font-heading: "Playfair Display", Georgia, serif;
-  --font-body: "Montserrat", system-ui, sans-serif;
+  --font-heading: "Inter", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* Base styles */
 body {
-  background: var(--color-brand-cream);
-  color: var(--color-brand-black);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scrollbar styling */
@@ -41,14 +52,14 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #C9A84C40;
+  background: #D0D0CE;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C9A84C80;
+  background: #B0B0AE;
 }
 
-/* Custom utilities */
-@utility gold-glow {
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
+/* Safe area for mobile */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }

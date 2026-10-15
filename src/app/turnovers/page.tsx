@@ -139,8 +139,8 @@ export default function TurnoversPage() {
             className={cn(
               'flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer',
               view === v.key
-                ? 'bg-brand-gold text-brand-black'
-                : 'text-gray-500 hover:text-brand-black'
+                ? 'bg-accent-dark text-white'
+                : 'text-gray-500 hover:text-text-primary'
             )}
           >
             {v.icon}
@@ -159,11 +159,11 @@ export default function TurnoversPage() {
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-brand-black text-sm capitalize">{headerTitle}</span>
+            <span className="font-semibold text-text-primary text-sm capitalize">{headerTitle}</span>
             {!isToday(currentDate) && (
               <button
                 onClick={goToToday}
-                className="text-xs text-brand-gold hover:underline cursor-pointer"
+                className="text-xs text-accent-dark hover:underline cursor-pointer"
               >
                 Aujourd&apos;hui
               </button>
@@ -184,7 +184,7 @@ export default function TurnoversPage() {
           onClick={() => setStatusFilter('')}
           className={cn(
             'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-            !statusFilter ? 'bg-brand-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            !statusFilter ? 'bg-text-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           )}
         >
           Tous
@@ -198,7 +198,7 @@ export default function TurnoversPage() {
               onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
               className={cn(
                 'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-                statusFilter === s ? 'bg-brand-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                statusFilter === s ? 'bg-text-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               )}
             >
               {s === 'planifie' ? 'Planifié' : s === 'assigne' ? 'Assigné' : s === 'en_cours' ? 'En cours' : s === 'termine' ? 'Terminé' : s === 'verifie' ? 'Vérifié' : 'Annulé'} ({count})
@@ -280,12 +280,12 @@ function WeekView({
               onClick={() => onDayClick(day)}
               className={cn(
                 'flex items-center gap-3 w-full text-left mb-1.5 px-2 py-1 rounded-lg transition-colors cursor-pointer',
-                today ? 'bg-brand-gold/10' : 'hover:bg-gray-50'
+                today ? 'bg-accent-bg' : 'hover:bg-gray-50'
               )}
             >
               <div className={cn(
                 'w-10 h-10 rounded-full flex flex-col items-center justify-center text-xs leading-tight',
-                today ? 'bg-brand-gold text-brand-black font-bold' : 'bg-gray-100 text-gray-600'
+                today ? 'bg-accent-dark text-white font-bold' : 'bg-gray-100 text-gray-600'
               )}>
                 <span className="uppercase text-[10px]">{formatWeekDay(day)}</span>
                 <span className="font-semibold">{formatDayNum(day)}</span>
@@ -349,13 +349,13 @@ function MonthView({
               className={cn(
                 'relative min-h-[60px] sm:min-h-[80px] p-1 border-b border-r border-gray-50 transition-colors cursor-pointer',
                 !inMonth && 'opacity-40',
-                today && 'bg-brand-gold/5',
+                today && 'bg-accent-bg',
                 'hover:bg-gray-50'
               )}
             >
               <span className={cn(
                 'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs',
-                today ? 'bg-brand-gold text-brand-black font-bold' : 'text-gray-700'
+                today ? 'bg-accent-dark text-white font-bold' : 'text-gray-700'
               )}>
                 {formatDayNum(day)}
               </span>
@@ -465,7 +465,7 @@ function TurnoverCard({
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-semibold text-brand-black truncate">
+            <span className="font-semibold text-text-primary truncate">
               {turnover.apartment?.name || 'Appartement'}
             </span>
             <StatusBadge status={turnover.status} />
@@ -488,7 +488,7 @@ function TurnoverCard({
           )}
         </div>
         <div className="text-right shrink-0 ml-3">
-          <div className="font-semibold text-brand-gold">{formatMAD(Number(turnover.revenue))}</div>
+          <div className="font-semibold text-accent-dark">{formatMAD(Number(turnover.revenue))}</div>
           {!expanded && turnover.time_start && (
             <div className="text-xs text-gray-400">{formatTime(turnover.time_start)}</div>
           )}

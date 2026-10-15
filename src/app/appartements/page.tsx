@@ -99,13 +99,13 @@ export default function AppartementsPage() {
             placeholder="Rechercher..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold bg-white"
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent bg-white"
           />
         </div>
         <select
           value={filterClient}
           onChange={e => setFilterClient(e.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent/30"
         >
           <option value="">Tous les clients</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -136,13 +136,13 @@ export default function AppartementsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-semibold text-brand-black">{apt.name}</span>
+                          <span className="font-semibold text-text-primary">{apt.name}</span>
                           <TypeBadge type={apt.type} />
                         </div>
                         <p className="text-sm text-gray-500">{apt.neighborhood || apt.address || '—'}</p>
                       </div>
                       <div className="text-right">
-                        <div className="font-semibold text-brand-gold">{formatMAD(Number(apt.price_menage))}</div>
+                        <div className="font-semibold text-accent-dark">{formatMAD(Number(apt.price_menage))}</div>
                         <div className="text-xs text-gray-500">Marge: {formatMAD(margin)}</div>
                       </div>
                     </div>

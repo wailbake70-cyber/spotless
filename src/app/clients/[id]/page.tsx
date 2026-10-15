@@ -90,7 +90,7 @@ export default function ClientDetailPage() {
     <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
       {/* Back + Actions */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-black cursor-pointer">
+        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
         <div className="flex gap-2">
@@ -107,7 +107,7 @@ export default function ClientDetailPage() {
       <Card>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="font-heading text-xl font-bold text-brand-black">{client.name}</h1>
+            <h1 className="font-heading text-xl font-bold text-text-primary">{client.name}</h1>
             {client.contact_name && (
               <p className="text-sm text-gray-500 mt-0.5">{client.contact_name}</p>
             )}
@@ -117,7 +117,7 @@ export default function ClientDetailPage() {
 
         <div className="flex flex-wrap gap-3 text-sm">
           {client.phone && (
-            <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-brand-gold hover:underline">
+            <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-accent-dark hover:underline">
               <Phone size={14} /> {client.phone}
             </a>
           )}
@@ -141,11 +141,11 @@ export default function ClientDetailPage() {
       {/* Financial Summary */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="text-center">
-          <div className="text-lg font-bold text-brand-gold">{formatMAD(totalRevenue)}</div>
+          <div className="text-lg font-bold text-accent-dark">{formatMAD(totalRevenue)}</div>
           <div className="text-xs text-gray-500">Revenus récents</div>
         </Card>
         <Card className="text-center">
-          <div className="text-lg font-bold text-brand-black">{apartments.length}</div>
+          <div className="text-lg font-bold text-text-primary">{apartments.length}</div>
           <div className="text-xs text-gray-500">Appartements</div>
         </Card>
         <Card className="text-center">
@@ -159,7 +159,7 @@ export default function ClientDetailPage() {
       {/* Apartments */}
       <section>
         <CardTitle className="mb-3">
-          <Building2 size={18} className="inline mr-2 text-brand-gold" />
+          <Building2 size={18} className="inline mr-2 text-accent-dark" />
           Appartements ({apartments.length})
         </CardTitle>
         <div className="space-y-2">
@@ -171,12 +171,12 @@ export default function ClientDetailPage() {
               className="flex items-center justify-between"
             >
               <div>
-                <span className="font-medium text-brand-black">{apt.name}</span>
+                <span className="font-medium text-text-primary">{apt.name}</span>
                 <span className="text-sm text-gray-500 ml-2">{apt.neighborhood}</span>
               </div>
               <div className="flex items-center gap-2">
                 <TypeBadge type={apt.type} />
-                <span className="font-semibold text-brand-gold">{formatMAD(Number(apt.price_menage))}</span>
+                <span className="font-semibold text-accent-dark">{formatMAD(Number(apt.price_menage))}</span>
               </div>
             </Card>
           ))}
@@ -187,7 +187,7 @@ export default function ClientDetailPage() {
       {recentTurnovers.length > 0 && (
         <section>
           <CardTitle className="mb-3">
-            <Calendar size={18} className="inline mr-2 text-brand-gold" />
+            <Calendar size={18} className="inline mr-2 text-accent-dark" />
             Derniers turnovers
           </CardTitle>
           <div className="space-y-2">

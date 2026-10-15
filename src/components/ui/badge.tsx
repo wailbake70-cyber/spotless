@@ -13,7 +13,7 @@ export function Badge({ children, variant = 'default', className }: BadgeProps) 
       className={cn(
         'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium',
         variant === 'default' && 'bg-gray-100 text-gray-700',
-        variant === 'gold' && 'bg-brand-gold/10 text-brand-gold-dark',
+        variant === 'gold' && 'bg-accent-bg text-accent-dark',
         variant === 'success' && 'bg-green-50 text-green-700',
         variant === 'warning' && 'bg-yellow-50 text-yellow-700',
         variant === 'error' && 'bg-red-50 text-red-700',
@@ -38,7 +38,7 @@ export function StatusBadge({ status }: { status: TurnoverStatus }) {
 
 export function TypeBadge({ type }: { type: string }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-brand-gold/10 text-brand-gold-dark border border-brand-gold/20">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-accent-bg text-accent-dark border border-accent/20">
       {type}
     </span>
   );

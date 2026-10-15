@@ -28,7 +28,7 @@ export function CopyButton({ text, label, className }: CopyButtonProps) {
         'inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all cursor-pointer',
         copied
           ? 'bg-green-50 text-green-600'
-          : 'bg-gray-50 text-gray-600 hover:bg-brand-gold/10 hover:text-brand-gold-dark',
+          : 'bg-bg-hover text-text-secondary hover:bg-accent-bg hover:text-accent-dark',
         className
       )}
       title={`Copier ${label || text}`}
