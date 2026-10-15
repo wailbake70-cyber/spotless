@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Brand Colors */
+  --color-brand-black: #0A0A0A;
+  --color-brand-gold: #C9A84C;
+  --color-brand-gold-light: #E2C97E;
+  --color-brand-gold-dark: #8A6D2B;
+  --color-brand-cream: #F5F0E8;
+
+  /* Status Colors */
+  --color-status-planifie: #3B82F6;
+  --color-status-assigne: #EAB308;
+  --color-status-en-cours: #F97316;
+  --color-status-termine: #22C55E;
+  --color-status-verifie: #10B981;
+  --color-status-annule: #EF4444;
+
+  /* Stock Colors */
+  --color-stock-ok: #22C55E;
+  --color-stock-bas: #EAB308;
+  --color-stock-epuise: #EF4444;
+
+  /* Fonts */
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-body: "Montserrat", system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-brand-cream);
+  color: var(--color-brand-black);
+  font-family: var(--font-body);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #C9A84C40;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C9A84C80;
+}
+
+/* Custom utilities */
+@utility gold-glow {
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
 }
