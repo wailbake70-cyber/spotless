@@ -50,10 +50,7 @@ export const PAYMENT_FREQUENCIES = [
 
 export const ACCESS_TYPES = [
   { value: 'code', label: 'Code' },
-  { value: 'cle_gardien', label: 'Clé gardien' },
-  { value: 'cle_sous_tapis', label: 'Clé sous tapis' },
   { value: 'cle_boite', label: 'Clé boîte' },
-  { value: 'other', label: 'Autre' },
 ] as const;
 
 export const NAV_ITEMS = [

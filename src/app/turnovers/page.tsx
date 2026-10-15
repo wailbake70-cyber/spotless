@@ -116,7 +116,7 @@ export default function TurnoversPage() {
       const end = endOfWeek(currentDate, { weekStartsOn: 1 });
       return `${format(start, 'd', { locale: fr })} – ${format(end, 'd MMM yyyy', { locale: fr })}`;
     }
-    return 'Tous les turnovers';
+    return 'Toutes les missions';
   }, [currentDate, view]);
 
   return (
@@ -291,7 +291,7 @@ function WeekView({
                 <span className="font-semibold">{formatDayNum(day)}</span>
               </div>
               <span className="text-sm text-gray-500">
-                {dayTurnovers.length} turnover{dayTurnovers.length !== 1 ? 's' : ''}
+                {dayTurnovers.length} mission{dayTurnovers.length !== 1 ? 's' : ''}
               </span>
             </button>
 
@@ -422,6 +422,7 @@ function ListView({
   groupedByDate: Record<string, Turnover[]>;
   onTurnoverClick: (id: string) => void;
 }) {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const sortedDates = Object.keys(groupedByDate).sort();
 
   if (sortedDates.length === 0) {
@@ -434,20 +435,41 @@ function ListView({
     );
   }
 
+  const upcoming = sortedDates.filter(d => d > todayStr);
+  const today = sortedDates.filter(d => d === todayStr);
+  const past = sortedDates.filter(d => d < todayStr).reverse();
+
+  const renderSection = (dates: string[], label: string, accent?: boolean) => {
+    if (dates.length === 0) return null;
+    return (
+      <div className="space-y-3">
+        <h2 className={cn(
+          'text-xs font-bold uppercase tracking-wider px-2 py-1 rounded',
+          accent ? 'text-accent-dark bg-accent-bg' : 'text-gray-400'
+        )}>
+          {label} ({dates.reduce((n, d) => n + (groupedByDate[d]?.length || 0), 0)})
+        </h2>
+        {dates.map(date => (
+          <section key={date}>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 capitalize">
+              {formatDay(date)}
+            </h3>
+            <div className="space-y-2">
+              {groupedByDate[date].map(t => (
+                <TurnoverCard key={t.id} turnover={t} onClick={() => onTurnoverClick(t.id)} expanded />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4">
-      {sortedDates.map(date => (
-        <section key={date}>
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 capitalize">
-            {formatDay(date)}
-          </h3>
-          <div className="space-y-2">
-            {groupedByDate[date].map(t => (
-              <TurnoverCard key={t.id} turnover={t} onClick={() => onTurnoverClick(t.id)} expanded />
-            ))}
-          </div>
-        </section>
-      ))}
+    <div className="space-y-6">
+      {renderSection(today, "Aujourd'hui", true)}
+      {renderSection(upcoming, 'À venir')}
+      {renderSection(past, 'Passé')}
     </div>
   );
 }

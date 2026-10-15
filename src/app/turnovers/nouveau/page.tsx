@@ -84,9 +84,6 @@ export default function NewTurnoverPage() {
       status: cleanerId ? 'assigne' : 'planifie',
       revenue: parseFloat(formData.get('revenue') as string) || null,
       cost_femme: parseFloat(formData.get('cost_femme') as string) || null,
-      cost_transport: parseFloat(formData.get('cost_transport') as string) || null,
-      cost_produits: parseFloat(formData.get('cost_produits') as string) || null,
-      cost_pressing: parseFloat(formData.get('cost_pressing') as string) || null,
       notes: formData.get('notes') as string || null,
       source: 'manual',
     }).select('id').single();
@@ -191,52 +188,36 @@ export default function NewTurnoverPage() {
 
           {/* Financial — auto-filled from apartment */}
           <Card>
-            <CardTitle className="mb-3">Tarifs (MAD)</CardTitle>
+            <CardTitle className="mb-3">Coût (MAD)</CardTitle>
             <div className="space-y-3">
+              <input type="hidden" name="revenue" value={selectedApt ? String(selectedApt.price_menage) : '0'} />
               <Input
-                name="revenue"
-                label="Revenu (prix ménage)"
+                name="cost_femme"
+                label="Coût femme de ménage *"
                 type="number"
-                key={`revenue-${selectedAptId}`}
-                defaultValue={selectedApt ? String(selectedApt.price_menage) : ''}
-                placeholder="180"
+                key={`femme-${selectedAptId}`}
+                defaultValue={selectedApt?.cost_femme ? String(selectedApt.cost_femme) : ''}
+                placeholder="90"
+                required
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  name="cost_femme"
-                  label="Coût femme"
-                  type="number"
-                  key={`femme-${selectedAptId}`}
-                  defaultValue={selectedApt?.cost_femme ? String(selectedApt.cost_femme) : ''}
-                  placeholder="90"
-                />
-                <Input
-                  name="cost_transport"
-                  label="Transport"
-                  type="number"
-                  key={`transport-${selectedAptId}`}
-                  defaultValue={selectedApt?.cost_transport ? String(selectedApt.cost_transport) : ''}
-                  placeholder="15"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  name="cost_produits"
-                  label="Produits"
-                  type="number"
-                  key={`produits-${selectedAptId}`}
-                  defaultValue={selectedApt?.cost_produits ? String(selectedApt.cost_produits) : ''}
-                  placeholder="0"
-                />
-                <Input
-                  name="cost_pressing"
-                  label="Pressing"
-                  type="number"
-                  key={`pressing-${selectedAptId}`}
-                  defaultValue={selectedApt?.cost_pressing ? String(selectedApt.cost_pressing) : ''}
-                  placeholder="0"
-                />
-              </div>
+              {selectedApt && (
+                <div className="p-3 bg-accent-bg rounded-lg border border-accent/10 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Prix ménage (client)</span>
+                    <span className="font-semibold text-accent-dark">{formatMAD(Number(selectedApt.price_menage))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Coût femme</span>
+                    <span className="text-gray-700">{formatMAD(Number(selectedApt.cost_femme || 0))}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-accent/10">
+                    <span className="font-semibold">Marge</span>
+                    <span className={`font-bold ${(Number(selectedApt.price_menage) - Number(selectedApt.cost_femme || 0)) >= 0 ? 'text-status-termine' : 'text-status-annule'}`}>
+                      {formatMAD(Number(selectedApt.price_menage) - Number(selectedApt.cost_femme || 0))}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 

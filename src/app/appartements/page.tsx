@@ -51,8 +51,6 @@ export default function AppartementsPage() {
       address: formData.get('address') as string || null,
       price_menage: parseFloat(formData.get('price_menage') as string),
       cost_femme: parseFloat(formData.get('cost_femme') as string) || null,
-      cost_transport: parseFloat(formData.get('cost_transport') as string) || null,
-      cost_produits: parseFloat(formData.get('cost_produits') as string) || null,
       access_type: formData.get('access_type') as string || null,
       access_code: formData.get('access_code') as string || null,
       special_instructions: formData.get('special_instructions') as string || null,
@@ -128,7 +126,7 @@ export default function AppartementsPage() {
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{clientName}</h2>
             <div className="space-y-2">
               {apts.map(apt => {
-                const margin = (Number(apt.price_menage) || 0) - (Number(apt.cost_femme) || 0) - (Number(apt.cost_transport) || 0) - (Number(apt.cost_produits) || 0) - (Number(apt.cost_pressing) || 0);
+                const margin = (Number(apt.price_menage) || 0) - (Number(apt.cost_femme) || 0);
                 return (
                   <Card key={apt.id} hover onClick={() => router.push(`/appartements/${apt.id}`)}>
                     <div className="flex items-center justify-between">
@@ -170,10 +168,6 @@ export default function AppartementsPage() {
           <div className="grid grid-cols-2 gap-3">
             <Input name="price_menage" label="Prix ménage *" type="number" placeholder="180" required />
             <Input name="cost_femme" label="Coût femme" type="number" placeholder="90" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input name="cost_transport" label="Transport" type="number" placeholder="15" />
-            <Input name="cost_produits" label="Produits" type="number" placeholder="0" />
           </div>
 
           <h3 className="font-semibold text-sm text-gray-700 pt-2">Accès</h3>

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
-import { formatMAD, formatDateShort, calcMargin, calcMarginPct } from '@/lib/utils';
+import { formatMAD, formatDateShort } from '@/lib/utils';
 import { APARTMENT_TYPES, ACCESS_TYPES } from '@/lib/constants';
 import type { Apartment, Client, Turnover } from '@/lib/supabase/types';
 
@@ -59,8 +59,6 @@ export default function ApartmentDetailPage() {
       address: formData.get('address') as string || null,
       price_menage: parseFloat(formData.get('price_menage') as string),
       cost_femme: parseFloat(formData.get('cost_femme') as string) || null,
-      cost_transport: parseFloat(formData.get('cost_transport') as string) || null,
-      cost_produits: parseFloat(formData.get('cost_produits') as string) || null,
       access_type: formData.get('access_type') as string || null,
       access_code: formData.get('access_code') as string || null,
       access_notes: formData.get('access_notes') as string || null,
@@ -74,8 +72,8 @@ export default function ApartmentDetailPage() {
   if (loading) return <div className="p-4 lg:p-6"><div className="h-40 bg-white rounded-xl animate-pulse" /></div>;
   if (!apt) return <div className="p-4 lg:p-6 text-center text-gray-500">Appartement introuvable</div>;
 
-  const margin = calcMargin(Number(apt.price_menage), Number(apt.cost_femme), Number(apt.cost_transport), Number(apt.cost_produits), Number(apt.cost_pressing), 0);
-  const marginPct = calcMarginPct(margin, Number(apt.price_menage));
+  const margin = (Number(apt.price_menage) || 0) - (Number(apt.cost_femme) || 0);
+  const marginPct = Number(apt.price_menage) > 0 ? Math.round((margin / Number(apt.price_menage)) * 100) : 0;
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'info', label: 'Info' },
@@ -163,9 +161,6 @@ export default function ApartmentDetailPage() {
             </div>
             <div className="space-y-2 text-sm">
               <CostRow label="Femme de ménage" value={Number(apt.cost_femme)} />
-              <CostRow label="Transport" value={Number(apt.cost_transport)} />
-              <CostRow label="Produits" value={Number(apt.cost_produits)} />
-              <CostRow label="Pressing" value={Number(apt.cost_pressing)} />
             </div>
             <div className="flex justify-between items-center pt-3 border-t-2 border-accent/20">
               <span className="font-semibold">Marge nette</span>
@@ -250,10 +245,6 @@ export default function ApartmentDetailPage() {
           <div className="grid grid-cols-2 gap-3">
             <Input name="price_menage" label="Prix *" type="number" defaultValue={String(apt.price_menage)} required />
             <Input name="cost_femme" label="Coût femme" type="number" defaultValue={String(apt.cost_femme || '')} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input name="cost_transport" label="Transport" type="number" defaultValue={String(apt.cost_transport || '')} />
-            <Input name="cost_produits" label="Produits" type="number" defaultValue={String(apt.cost_produits || '')} />
           </div>
           <h3 className="font-semibold text-sm text-gray-700 pt-2">Accès</h3>
           <div className="grid grid-cols-2 gap-3">
