@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, AlertTriangle } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { EmptyState } from '@/components/ui/empty-state';
 import { createClient } from '@/lib/supabase/client';
 import { formatMAD } from '@/lib/utils';
 import type { Apartment, Client, Cleaner } from '@/lib/supabase/types';
@@ -14,12 +15,28 @@ import type { Apartment, Client, Cleaner } from '@/lib/supabase/types';
 type ApartmentWithClient = Apartment & { client?: Client };
 
 export default function NewTurnoverPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-4 lg:p-6 space-y-4 max-w-2xl mx-auto">
+        <div className="h-10 bg-white rounded-xl animate-pulse" />
+        <div className="h-32 bg-white rounded-xl animate-pulse" />
+        <div className="h-32 bg-white rounded-xl animate-pulse" />
+        <div className="h-24 bg-white rounded-xl animate-pulse" />
+      </div>
+    }>
+      <NewTurnoverForm />
+    </Suspense>
+  );
+}
+
+function NewTurnoverForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [apartments, setApartments] = useState<ApartmentWithClient[]>([]);
   const [cleaners, setCleaners] = useState<Cleaner[]>([]);
   const [selectedAptId, setSelectedAptId] = useState(searchParams.get('apt') || '');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Auto-fill values from selected apartment
@@ -30,20 +47,26 @@ export default function NewTurnoverPage() {
   }, []);
 
   async function loadData() {
-    const supabase = createClient();
-    const [aptsRes, cleanersRes] = await Promise.all([
-      supabase.from('apartments')
-        .select('*, client:clients(*)')
-        .eq('is_active', true)
-        .order('name'),
-      supabase.from('cleaners')
-        .select('*')
-        .eq('is_active', true)
-        .order('name'),
-    ]);
-    if (aptsRes.data) setApartments(aptsRes.data as ApartmentWithClient[]);
-    if (cleanersRes.data) setCleaners(cleanersRes.data);
-    setLoading(false);
+    try {
+      const supabase = createClient();
+      const [aptsRes, cleanersRes] = await Promise.all([
+        supabase.from('apartments')
+          .select('*, client:clients(*)')
+          .eq('is_active', true)
+          .order('name'),
+        supabase.from('cleaners')
+          .select('*')
+          .eq('is_active', true)
+          .order('name'),
+      ]);
+      if (aptsRes.error) throw aptsRes.error;
+      if (aptsRes.data) setApartments(aptsRes.data as ApartmentWithClient[]);
+      if (cleanersRes.data) setCleaners(cleanersRes.data);
+    } catch (e: any) {
+      setError(e?.message || 'Erreur de connexion à la base de données');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Group apartments by client for the select
@@ -112,6 +135,13 @@ export default function NewTurnoverPage() {
         <div className="space-y-3">
           {[1, 2, 3].map(i => <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />)}
         </div>
+      ) : error ? (
+        <EmptyState
+          icon={<AlertTriangle size={48} />}
+          title="Erreur de connexion"
+          description={error}
+          action={<Button onClick={() => { setError(''); setLoading(true); loadData(); }}>Réessayer</Button>}
+        />
       ) : (
         <form action={handleSubmit} className="space-y-4">
           {/* Apartment Selection */}

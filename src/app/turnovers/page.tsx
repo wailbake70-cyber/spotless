@@ -38,38 +38,43 @@ export default function TurnoversPage() {
   }, [currentDate, view]);
 
   async function loadTurnovers() {
-    const supabase = createClient();
-    let start: Date;
-    let end: Date;
+    try {
+      const supabase = createClient();
+      let start: Date;
+      let end: Date;
 
-    if (view === 'semaine') {
-      start = startOfWeek(currentDate, { weekStartsOn: 1 });
-      end = endOfWeek(currentDate, { weekStartsOn: 1 });
-    } else if (view === 'mois') {
-      start = startOfMonth(currentDate);
-      end = endOfMonth(currentDate);
-    } else if (view === 'jour') {
-      start = currentDate;
-      end = currentDate;
-    } else {
-      // liste: show last 30 days + next 14
-      start = subDays(new Date(), 30);
-      end = addDays(new Date(), 14);
+      if (view === 'semaine') {
+        start = startOfWeek(currentDate, { weekStartsOn: 1 });
+        end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      } else if (view === 'mois') {
+        start = startOfMonth(currentDate);
+        end = endOfMonth(currentDate);
+      } else if (view === 'jour') {
+        start = currentDate;
+        end = currentDate;
+      } else {
+        // liste: show last 30 days + next 14
+        start = subDays(new Date(), 30);
+        end = addDays(new Date(), 14);
+      }
+
+      const startStr = format(start, 'yyyy-MM-dd');
+      const endStr = format(end, 'yyyy-MM-dd');
+
+      const { data } = await supabase
+        .from('turnovers')
+        .select('*, apartment:apartments(*, client:clients(*)), cleaner:cleaners(*)')
+        .gte('date', startStr)
+        .lte('date', endStr)
+        .order('date')
+        .order('time_start');
+
+      setTurnovers((data as Turnover[]) || []);
+    } catch (e) {
+      console.error('Error loading turnovers:', e);
+    } finally {
+      setLoading(false);
     }
-
-    const startStr = format(start, 'yyyy-MM-dd');
-    const endStr = format(end, 'yyyy-MM-dd');
-
-    const { data } = await supabase
-      .from('turnovers')
-      .select('*, apartment:apartments(*, client:clients(*)), cleaner:cleaners(*)')
-      .gte('date', startStr)
-      .lte('date', endStr)
-      .order('date')
-      .order('time_start');
-
-    setTurnovers((data as Turnover[]) || []);
-    setLoading(false);
   }
 
   function navigate(direction: 'prev' | 'next') {
