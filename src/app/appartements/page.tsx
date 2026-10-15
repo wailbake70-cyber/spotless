@@ -55,8 +55,6 @@ export default function AppartementsPage() {
       cost_produits: parseFloat(formData.get('cost_produits') as string) || null,
       access_type: formData.get('access_type') as string || null,
       access_code: formData.get('access_code') as string || null,
-      wifi_name: formData.get('wifi_name') as string || null,
-      wifi_password: formData.get('wifi_password') as string || null,
       special_instructions: formData.get('special_instructions') as string || null,
     });
     if (!error) {
@@ -182,10 +180,6 @@ export default function AppartementsPage() {
           <div className="grid grid-cols-2 gap-3">
             <Select name="access_type" label="Type d'accès" options={[...ACCESS_TYPES]} placeholder="—" />
             <Input name="access_code" label="Code" placeholder="1234" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input name="wifi_name" label="WiFi nom" placeholder="Fibre-XXX" />
-            <Input name="wifi_password" label="WiFi mdp" placeholder="" />
           </div>
           <Textarea name="special_instructions" label="Instructions" placeholder="Notes spéciales..." />
 

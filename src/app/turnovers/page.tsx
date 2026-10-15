@@ -400,8 +400,8 @@ function DayView({
     return (
       <EmptyState
         icon={<CalendarIcon size={48} />}
-        title="Aucun turnover"
-        description={`Pas de turnover prévu pour ${formatDay(date).toLowerCase()}`}
+        title="Aucune mission"
+        description={`Pas de mission prévue pour ${formatDay(date).toLowerCase()}`}
       />
     );
   }
@@ -428,8 +428,8 @@ function ListView({
     return (
       <EmptyState
         icon={<CalendarIcon size={48} />}
-        title="Aucun turnover"
-        description="Aucun turnover trouvé pour cette période"
+        title="Aucune mission"
+        description="Aucune mission trouvée pour cette période"
       />
     );
   }

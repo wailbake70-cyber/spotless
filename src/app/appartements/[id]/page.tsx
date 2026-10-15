@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Copy, Key, Wifi, MapPin, DollarSign, Calendar, Wrench } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, Key, MapPin, DollarSign, Calendar, Wrench } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge, TypeBadge, StatusBadge } from '@/components/ui/badge';
@@ -64,8 +64,6 @@ export default function ApartmentDetailPage() {
       access_type: formData.get('access_type') as string || null,
       access_code: formData.get('access_code') as string || null,
       access_notes: formData.get('access_notes') as string || null,
-      wifi_name: formData.get('wifi_name') as string || null,
-      wifi_password: formData.get('wifi_password') as string || null,
       special_instructions: formData.get('special_instructions') as string || null,
     }).eq('id', params.id as string);
 
@@ -197,19 +195,6 @@ export default function ApartmentDetailPage() {
               )}
             </div>
 
-            {/* WiFi */}
-            <div className="pt-3 border-t border-gray-100">
-              <div className="flex items-center gap-2 mb-2">
-                <Wifi size={16} className="text-accent-dark" />
-                <span className="font-medium text-sm">WiFi</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {apt.wifi_name && <CopyButton text={apt.wifi_name} label={apt.wifi_name} />}
-                {apt.wifi_password && <CopyButton text={apt.wifi_password} label={`Mdp: ${apt.wifi_password}`} />}
-                {!apt.wifi_name && !apt.wifi_password && <p className="text-sm text-gray-500">Non renseigné</p>}
-              </div>
-            </div>
-
             {/* Pressing */}
             {apt.pressing_contact && (
               <div className="pt-3 border-t border-gray-100">
@@ -227,7 +212,7 @@ export default function ApartmentDetailPage() {
       {tab === 'historique' && (
         <div className="space-y-2">
           {turnovers.length === 0 ? (
-            <Card className="text-center py-8 text-gray-500">Aucun turnover enregistré</Card>
+            <Card className="text-center py-8 text-gray-500">Aucune mission enregistrée</Card>
           ) : (
             turnovers.map(t => (
               <Card key={t.id} hover onClick={() => router.push(`/turnovers/${t.id}`)}>
@@ -276,10 +261,6 @@ export default function ApartmentDetailPage() {
             <Input name="access_code" label="Code" defaultValue={apt.access_code || ''} />
           </div>
           <Input name="access_notes" label="Notes accès" defaultValue={apt.access_notes || ''} />
-          <div className="grid grid-cols-2 gap-3">
-            <Input name="wifi_name" label="WiFi nom" defaultValue={apt.wifi_name || ''} />
-            <Input name="wifi_password" label="WiFi mdp" defaultValue={apt.wifi_password || ''} />
-          </div>
           <Textarea name="special_instructions" label="Instructions" defaultValue={apt.special_instructions || ''} />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowEdit(false)}>Annuler</Button>

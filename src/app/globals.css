@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  /* Node-inspired clean colors */
+  /* SPOTLESS Brand Colors */
   --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #F8F8F6;
-  --color-bg-hover: #F2F2F0;
-  --color-border: #E8E8E6;
-  --color-border-light: #F0F0EE;
+  --color-bg-secondary: #F7F9FA;
+  --color-bg-hover: #EEF2F3;
+  --color-border: #E0E6E8;
+  --color-border-light: #EDF1F2;
   --color-text-primary: #1A1A1A;
-  --color-text-secondary: #6B6B6B;
-  --color-text-muted: #9B9B9B;
+  --color-text-secondary: #5A6B70;
+  --color-text-muted: #8A9BA0;
 
-  /* Accent — green like Node */
-  --color-accent: #B8E986;
-  --color-accent-dark: #8BC34A;
-  --color-accent-bg: #F0FAE5;
+  /* Accent — Deep Teal Blue */
+  --color-accent: #0E8C9A;
+  --color-accent-dark: #0B7285;
+  --color-accent-bg: #E8F4F6;
 
   /* Status Colors */
   --color-status-planifie: #64B5F6;
-  --color-status-assigne: #B8E986;
+  --color-status-assigne: #0E8C9A;
   --color-status-en-cours: #FFB74D;
   --color-status-termine: #81C784;
-  --color-status-verifie: #4DB6AC;
+  --color-status-verifie: #0B7285;
   --color-status-annule: #E57373;
 
   /* Semantic */

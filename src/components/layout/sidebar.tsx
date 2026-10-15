@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Home, Calendar, Users, Building2, Sparkles, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,11 +23,14 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-60 bg-bg-primary min-h-screen fixed left-0 top-0 z-40 border-r border-border">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-border">
-        <h1 className="font-heading text-xl font-bold text-text-primary tracking-tight">
-          SPOT<span className="text-accent-dark">LESS</span>
-        </h1>
-        <p className="text-[11px] text-text-muted mt-0.5">Gestion turnover</p>
+      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+        <Image src="/logo-spotless.png" alt="SPOTLESS" width={40} height={40} className="rounded-lg" />
+        <div>
+          <h1 className="font-heading text-lg font-bold text-accent-dark tracking-tight">
+            SPOTLESS
+          </h1>
+          <p className="text-[10px] text-text-muted">Gestion turnover</p>
+        </div>
       </div>
 
       {/* Main Nav */}

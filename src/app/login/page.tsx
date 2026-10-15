@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,10 +37,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="font-heading text-3xl font-bold text-text-primary tracking-tight">
-            SPOT<span className="text-accent-dark">LESS</span>
+          <Image src="/logo-spotless.png" alt="SPOTLESS" width={80} height={80} className="mx-auto mb-3 rounded-2xl" />
+          <h1 className="font-heading text-2xl font-bold text-accent-dark tracking-tight">
+            SPOTLESS
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Gestion des turnovers</p>
+          <p className="text-xs text-text-muted mt-1">Rien ne nous échappe.</p>
         </div>
 
         {/* Login Card */}
@@ -73,7 +75,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          SpotBNB Marrakech © {new Date().getFullYear()}
+          SPOTLESS Marrakech © {new Date().getFullYear()}
         </p>
       </div>
     </div>
