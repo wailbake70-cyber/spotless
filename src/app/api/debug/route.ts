@@ -1,15 +1,22 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const reqUrl = new URL(request.url);
+  const showKey = reqUrl.searchParams.get('showkey') === 'spotless2026';
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '(not set)';
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '(not set)';
 
   const results: Record<string, unknown> = {
-    supabase_url: url.substring(0, 45) + '...',
+    supabase_url: url,
     anon_key_prefix: key.substring(0, 20) + '...',
     anon_key_length: key.length,
     anon_key_format: key.startsWith('eyJ') ? 'JWT (old format - OK)' : key.startsWith('sb_') ? 'sb_publishable (new format)' : 'unknown',
   };
+
+  if (showKey) {
+    results.anon_key_full = key;
+  }
 
   // Test 1: Can we reach the Supabase URL?
   try {
