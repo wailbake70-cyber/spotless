@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Plus, Building2, Users } from 'lucide-react';
+import { Home, Calendar, Plus, Building2, Users, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
@@ -11,6 +11,7 @@ const TABS = [
   { href: '/turnovers/nouveau', label: '', icon: Plus, isCenter: true },
   { href: '/appartements', label: 'Apparts', icon: Building2 },
   { href: '/clients', label: 'Clients', icon: Users },
+  { href: '/cleaners', label: 'Équipe', icon: Sparkles },
 ];
 
 export function BottomTabs() {
@@ -40,7 +41,7 @@ export function BottomTabs() {
               key={tab.href}
               href={tab.href}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-1 min-w-[60px]',
+                'flex flex-col items-center gap-0.5 px-1.5 py-1 min-w-[48px]',
                 isActive ? 'text-accent-dark' : 'text-text-muted'
               )}
             >
