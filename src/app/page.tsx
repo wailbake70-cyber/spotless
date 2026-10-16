@@ -13,7 +13,7 @@ import type { Turnover } from '@/lib/supabase/types';
 export default function Dashboard() {
   const router = useRouter();
   const [todayTurnovers, setTodayTurnovers] = useState<Turnover[]>([]);
-  const [weekStats, setWeekStats] = useState({ count: 0, revenue: 0, pending: 0 });
+  const [weekStats, setWeekStats] = useState({ count: 0, revenue: 0, costFemme: 0, margin: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,15 +41,19 @@ export default function Dashboard() {
 
     const { data: weekTurnovers } = await supabase
       .from('turnovers')
-      .select('revenue, is_paid_by_client, status')
+      .select('revenue, cost_femme, is_paid_by_client, status')
       .gte('date', startOfWeek.toISOString().split('T')[0])
       .lte('date', endOfWeek.toISOString().split('T')[0])
       .neq('status', 'annule');
 
     if (weekTurnovers) {
+      const revenue = weekTurnovers.reduce((sum, t) => sum + (Number(t.revenue) || 0), 0);
+      const costFemme = weekTurnovers.reduce((sum, t) => sum + (Number(t.cost_femme) || 0), 0);
       setWeekStats({
         count: weekTurnovers.length,
-        revenue: weekTurnovers.reduce((sum, t) => sum + (Number(t.revenue) || 0), 0),
+        revenue,
+        costFemme,
+        margin: revenue - costFemme,
         pending: weekTurnovers.filter(t => !t.is_paid_by_client).length,
       });
     }
@@ -76,20 +80,30 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="text-center">
           <div className="text-2xl font-bold text-accent-dark">{weekStats.count}</div>
           <div className="text-xs text-gray-500 mt-1">Cette semaine</div>
         </Card>
         <Card className="text-center">
           <div className="text-2xl font-bold text-text-primary">{formatMAD(weekStats.revenue)}</div>
-          <div className="text-xs text-gray-500 mt-1">Revenus</div>
+          <div className="text-xs text-gray-500 mt-1">Revenus clients</div>
         </Card>
         <Card className="text-center">
-          <div className="text-2xl font-bold text-status-en-cours">{weekStats.pending}</div>
-          <div className="text-xs text-gray-500 mt-1">Non payés</div>
+          <div className="text-2xl font-bold text-status-annule">{formatMAD(weekStats.costFemme)}</div>
+          <div className="text-xs text-gray-500 mt-1">Coût femmes</div>
+        </Card>
+        <Card className="text-center">
+          <div className={`text-2xl font-bold ${weekStats.margin >= 0 ? 'text-status-termine' : 'text-status-annule'}`}>{formatMAD(weekStats.margin)}</div>
+          <div className="text-xs text-gray-500 mt-1">Ma marge</div>
         </Card>
       </div>
+      {weekStats.pending > 0 && (
+        <Card className="text-center">
+          <div className="text-xl font-bold text-status-en-cours">{weekStats.pending}</div>
+          <div className="text-xs text-gray-500 mt-1">Non payés</div>
+        </Card>
+      )}
 
       {/* Today's Turnovers */}
       <section>
