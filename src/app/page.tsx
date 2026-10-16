@@ -2,12 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Plus, AlertTriangle, TrendingUp, Clock, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Calendar, Plus, AlertTriangle, TrendingUp, Clock, CheckCircle, Eye, EyeOff, BarChart3 } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badge';
 import { createClient } from '@/lib/supabase/client';
 import { formatDay, formatTime, formatMAD } from '@/lib/utils';
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
+} from 'recharts';
+import {
+  startOfWeek, subWeeks, endOfWeek, format
+} from 'date-fns';
+import { fr } from 'date-fns/locale';
 import type { Turnover } from '@/lib/supabase/types';
 
 export default function Dashboard() {
@@ -18,6 +25,7 @@ export default function Dashboard() {
   const [showRevenue, setShowRevenue] = useState(false);
   const [showCost, setShowCost] = useState(false);
   const [showMargin, setShowMargin] = useState(false);
+  const [chartData, setChartData] = useState<{ label: string; revenue: number; margin: number }[]>([]);
 
   useEffect(() => {
     loadData();
@@ -37,16 +45,16 @@ export default function Dashboard() {
     setTodayTurnovers((turnovers as Turnover[]) || []);
 
     // Week stats
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
 
     const { data: weekTurnovers } = await supabase
       .from('turnovers')
       .select('revenue, cost_femme, is_paid_by_client, status')
-      .gte('date', startOfWeek.toISOString().split('T')[0])
-      .lte('date', endOfWeek.toISOString().split('T')[0])
+      .gte('date', weekStart.toISOString().split('T')[0])
+      .lte('date', weekEnd.toISOString().split('T')[0])
       .neq('status', 'annule');
 
     if (weekTurnovers) {
@@ -60,6 +68,36 @@ export default function Dashboard() {
         pending: weekTurnovers.filter(t => !t.is_paid_by_client).length,
       });
     }
+
+    // Evolution chart — last 8 weeks
+    const weeks: { label: string; start: string; end: string }[] = [];
+    for (let i = 7; i >= 0; i--) {
+      const ws = startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 });
+      const we = endOfWeek(ws, { weekStartsOn: 1 });
+      weeks.push({
+        label: format(ws, 'd MMM', { locale: fr }),
+        start: format(ws, 'yyyy-MM-dd'),
+        end: format(we, 'yyyy-MM-dd'),
+      });
+    }
+
+    const { data: allRecent } = await supabase
+      .from('turnovers')
+      .select('date, revenue, cost_femme, cost_transport, cost_produits, cost_pressing, cost_other')
+      .gte('date', weeks[0].start)
+      .lte('date', weeks[weeks.length - 1].end)
+      .neq('status', 'annule');
+
+    const chart = weeks.map(w => {
+      const wTurnovers = (allRecent || []).filter(
+        (t: { date: string }) => t.date >= w.start && t.date <= w.end
+      );
+      const rev = wTurnovers.reduce((s: number, t: { revenue: number | null }) => s + (Number(t.revenue) || 0), 0);
+      const cost = wTurnovers.reduce((s: number, t: { cost_femme: number | null; cost_transport: number | null; cost_produits: number | null; cost_pressing: number | null; cost_other: number | null }) =>
+        s + (Number(t.cost_femme) || 0) + (Number(t.cost_transport) || 0) + (Number(t.cost_produits) || 0) + (Number(t.cost_pressing) || 0) + (Number(t.cost_other) || 0), 0);
+      return { label: w.label, revenue: rev, margin: rev - cost };
+    });
+    setChartData(chart);
 
     setLoading(false);
   }
@@ -121,6 +159,53 @@ export default function Dashboard() {
           <div className="text-xl font-bold text-status-en-cours">{weekStats.pending}</div>
           <div className="text-xs text-gray-500 mt-1">Non payés</div>
         </Card>
+      )}
+
+      {/* Evolution Chart */}
+      {chartData.length > 0 && chartData.some(d => d.revenue > 0) && (
+        <section>
+          <CardHeader>
+            <CardTitle>
+              <BarChart3 size={20} className="inline mr-2 text-accent-dark" />
+              Évolution (8 semaines)
+            </CardTitle>
+          </CardHeader>
+          <Card>
+            <div className="h-52 -mx-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradRevenu" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0B7285" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#0B7285" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradMarge" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 13 }}
+                    formatter={(value: unknown, name: unknown) => [
+                      `${value} MAD`,
+                      name === 'revenue' ? 'Revenus' : 'Marge'
+                    ]}
+                    labelFormatter={(label: unknown) => `Sem. ${label}`}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#0B7285" strokeWidth={2.5} fill="url(#gradRevenu)" dot={{ r: 3, fill: '#0B7285' }} />
+                  <Area type="monotone" dataKey="margin" stroke="#22c55e" strokeWidth={2} fill="url(#gradMarge)" dot={{ r: 3, fill: '#22c55e' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-center gap-5 mt-2 text-xs text-gray-500">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#0B7285] rounded-full inline-block" /> Revenus</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#22c55e] rounded-full inline-block" /> Marge</span>
+            </div>
+          </Card>
+        </section>
       )}
 
       {/* Today's Turnovers */}
