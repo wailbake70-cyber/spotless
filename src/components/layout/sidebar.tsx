@@ -22,8 +22,8 @@ export function Sidebar() {
 
   return (
     <aside className="hidden lg:flex flex-col w-60 bg-bg-primary min-h-screen fixed left-0 top-0 z-40 border-r border-border">
-      {/* Logo */}
-      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+      {/* Logo — click to go to Dashboard */}
+      <Link href="/" className="px-5 py-4 border-b border-border flex items-center gap-3 hover:bg-bg-hover transition-colors">
         <Image src="/logo-spotless.png" alt="SPOTLESS" width={40} height={40} className="rounded-lg" />
         <div>
           <h1 className="font-heading text-lg font-bold text-accent-dark tracking-tight">
@@ -31,7 +31,7 @@ export function Sidebar() {
           </h1>
           <p className="text-[10px] text-text-muted">Gestion turnover</p>
         </div>
-      </div>
+      </Link>
 
       {/* Main Nav */}
       <nav className="flex-1 px-3 pt-4 space-y-6">
