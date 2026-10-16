@@ -23,7 +23,10 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError(`Erreur: ${error.message}`);
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '(vide)';
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '(vide)';
+      const keyType = key.startsWith('eyJ') ? 'JWT' : key.startsWith('sb_') ? 'sb_key' : 'unknown';
+      setError(`${error.message} | URL: ${url.substring(0, 40)} | Key: ${keyType}(${key.substring(0, 15)}...) | Code: ${error.status || 'N/A'}`);
       setLoading(false);
       return;
     }
