@@ -1,71 +1,73 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
-  List, LayoutGrid, Clock, Filter
+  Clock, Sparkles, LogOut, LogIn
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StatusBadge, TypeBadge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { createClient } from '@/lib/supabase/client';
-import {
-  formatDay, formatTime, formatMAD, formatWeekDay, formatDayNum,
-  formatMonthYear, formatDateShort, cn
-} from '@/lib/utils';
+import { formatTime, cn } from '@/lib/utils';
 import {
   startOfWeek, endOfWeek, startOfMonth, endOfMonth,
-  addWeeks, subWeeks, addMonths, subMonths, addDays, subDays,
-  eachDayOfInterval, format, isToday, isSameDay, parseISO
+  addMonths, subMonths, addDays, subDays,
+  eachDayOfInterval, format, isToday, isSameDay, isSameMonth,
+  parseISO
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Turnover } from '@/lib/supabase/types';
 
-type ViewMode = 'semaine' | 'mois' | 'jour' | 'liste';
+type MainTab = 'aujourdhui' | 'semaine' | 'toutes';
+type SubFilter = 'a_venir' | 'passes' | 'toutes';
+
+const MAIN_TABS: { key: MainTab; label: string }[] = [
+  { key: 'aujourdhui', label: "Aujourd'hui" },
+  { key: 'semaine', label: 'Cette semaine' },
+  { key: 'toutes', label: 'Toutes' },
+];
+
+const SUB_FILTERS: { key: SubFilter; label: string }[] = [
+  { key: 'a_venir', label: 'À venir' },
+  { key: 'passes', label: 'Passées' },
+  { key: 'toutes', label: 'Toutes' },
+];
 
 export default function TurnoversPage() {
   const router = useRouter();
   const [turnovers, setTurnovers] = useState<Turnover[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<ViewMode>('semaine');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [mainTab, setMainTab] = useState<MainTab>('aujourdhui');
+  const [subFilter, setSubFilter] = useState<SubFilter>('a_venir');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadTurnovers();
-  }, [currentDate, view]);
-
-  async function loadTurnovers() {
+  const loadTurnovers = useCallback(async () => {
+    setLoading(true);
     try {
       const supabase = createClient();
-      let start: Date;
-      let end: Date;
+      const today = new Date();
+      let startDate: Date;
+      let endDate: Date;
 
-      if (view === 'semaine') {
-        start = startOfWeek(currentDate, { weekStartsOn: 1 });
-        end = endOfWeek(currentDate, { weekStartsOn: 1 });
-      } else if (view === 'mois') {
-        start = startOfMonth(currentDate);
-        end = endOfMonth(currentDate);
-      } else if (view === 'jour') {
-        start = currentDate;
-        end = currentDate;
+      if (mainTab === 'aujourdhui') {
+        startDate = today;
+        endDate = today;
+      } else if (mainTab === 'semaine') {
+        startDate = startOfWeek(today, { weekStartsOn: 1 });
+        endDate = endOfWeek(today, { weekStartsOn: 1 });
       } else {
-        // liste: show last 30 days + next 14
-        start = subDays(new Date(), 30);
-        end = addDays(new Date(), 14);
+        startDate = subDays(today, 90);
+        endDate = addDays(today, 90);
       }
-
-      const startStr = format(start, 'yyyy-MM-dd');
-      const endStr = format(end, 'yyyy-MM-dd');
 
       const { data } = await supabase
         .from('turnovers')
         .select('*, apartment:apartments(*, client:clients(*)), cleaner:cleaners(*)')
-        .gte('date', startStr)
-        .lte('date', endStr)
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(endDate, 'yyyy-MM-dd'))
         .order('date')
         .order('time_start');
 
@@ -75,28 +77,43 @@ export default function TurnoversPage() {
     } finally {
       setLoading(false);
     }
+  }, [mainTab]);
+
+  useEffect(() => {
+    loadTurnovers();
+  }, [loadTurnovers]);
+
+  // Clear selected date when switching tabs
+  function handleTabChange(tab: MainTab) {
+    setMainTab(tab);
+    setSelectedDate(null);
+    if (tab !== 'toutes') setSubFilter('a_venir');
   }
 
-  function navigate(direction: 'prev' | 'next') {
-    if (view === 'semaine') {
-      setCurrentDate(direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1));
-    } else if (view === 'mois') {
-      setCurrentDate(direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
-    } else if (view === 'jour') {
-      setCurrentDate(direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1));
-    }
-  }
-
-  function goToToday() {
-    setCurrentDate(new Date());
-  }
-
+  // Filtered turnovers
   const filtered = useMemo(() => {
-    if (!statusFilter) return turnovers;
-    return turnovers.filter(t => t.status === statusFilter);
-  }, [turnovers, statusFilter]);
+    let result = turnovers;
 
-  // Group turnovers by date
+    // Calendar date selection overrides everything
+    if (selectedDate) {
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      return result.filter(t => t.date === dateStr);
+    }
+
+    // Sub-filter for "toutes" tab
+    if (mainTab === 'toutes' && subFilter !== 'toutes') {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      if (subFilter === 'a_venir') {
+        result = result.filter(t => t.date >= todayStr);
+      } else {
+        result = result.filter(t => t.date < todayStr).reverse();
+      }
+    }
+
+    return result;
+  }, [turnovers, selectedDate, mainTab, subFilter]);
+
+  // Group by date for list headers
   const groupedByDate = useMemo(() => {
     const map: Record<string, Turnover[]> = {};
     for (const t of filtered) {
@@ -106,283 +123,302 @@ export default function TurnoversPage() {
     return map;
   }, [filtered]);
 
-  const VIEWS: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
-    { key: 'semaine', label: 'Sem.', icon: <LayoutGrid size={14} /> },
-    { key: 'mois', label: 'Mois', icon: <CalendarIcon size={14} /> },
-    { key: 'jour', label: 'Jour', icon: <Clock size={14} /> },
-    { key: 'liste', label: 'Liste', icon: <List size={14} /> },
-  ];
-
-  const headerTitle = useMemo(() => {
-    if (view === 'jour') return formatDay(currentDate);
-    if (view === 'mois') return formatMonthYear(currentDate);
-    if (view === 'semaine') {
-      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-      return `${format(start, 'd', { locale: fr })} – ${format(end, 'd MMM yyyy', { locale: fr })}`;
+  // Turnovers per date for calendar dots
+  const turnoversPerDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const t of turnovers) {
+      map[t.date] = (map[t.date] || 0) + 1;
     }
-    return 'Toutes les missions';
-  }, [currentDate, view]);
+    return map;
+  }, [turnovers]);
+
+  const missionCount = filtered.length;
+  const sortedDates = Object.keys(groupedByDate).sort(
+    mainTab === 'toutes' && subFilter === 'passes' ? (a, b) => b.localeCompare(a) : undefined
+  );
+
+  const selectedDateLabel = selectedDate
+    ? format(selectedDate, "EEEE d MMMM", { locale: fr })
+    : null;
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
+    <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto pb-28 lg:pb-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Turnovers</h1>
-        <Button onClick={() => router.push('/turnovers/nouveau')}>
-          <Plus size={18} />
-          <span className="hidden sm:inline">Nouveau</span>
-        </Button>
-      </div>
-
-      {/* View Selector */}
-      <div className="flex gap-1 bg-white rounded-lg p-1 border border-gray-100">
-        {VIEWS.map(v => (
+        <h1 className="font-heading text-2xl font-bold">Missions</h1>
+        <div className="flex items-center gap-2">
           <button
-            key={v.key}
-            onClick={() => setView(v.key)}
+            onClick={() => setShowCalendar(!showCalendar)}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer',
-              view === v.key
-                ? 'bg-accent-dark text-white'
-                : 'text-gray-500 hover:text-text-primary'
+              'p-2 rounded-xl transition-all duration-200 cursor-pointer',
+              showCalendar
+                ? 'bg-accent-dark text-white shadow-md'
+                : 'bg-white border border-gray-200 text-gray-500 hover:border-accent/30 hover:text-accent-dark'
             )}
           >
-            {v.icon}
-            <span className="hidden sm:inline">{v.label}</span>
+            <CalendarIcon size={20} />
+          </button>
+          <Button onClick={() => router.push('/turnovers/nouveau')} size="sm">
+            <Plus size={18} />
+            <span className="hidden sm:inline ml-1">Nouveau</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Tabs */}
+      <div className="flex bg-gray-100 rounded-xl p-1">
+        {MAIN_TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => handleTabChange(tab.key)}
+            className={cn(
+              'flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer',
+              mainTab === tab.key
+                ? 'bg-white text-accent-dark shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            )}
+          >
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Navigation Bar */}
-      {view !== 'liste' && (
-        <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-100">
+      {/* Calendar (collapsible) */}
+      {showCalendar && (
+        <MiniCalendar
+          month={calendarMonth}
+          onMonthChange={setCalendarMonth}
+          turnoversPerDate={turnoversPerDate}
+          selectedDate={selectedDate}
+          onSelectDate={(d) => {
+            setSelectedDate(d);
+            if (d && mainTab !== 'toutes') {
+              setMainTab('toutes');
+            }
+          }}
+        />
+      )}
+
+      {/* Selected date indicator */}
+      {selectedDate && (
+        <div className="flex items-center justify-between bg-accent-bg rounded-xl px-4 py-2.5 border border-accent/10">
+          <span className="text-sm font-medium text-accent-dark capitalize">{selectedDateLabel}</span>
           <button
-            onClick={() => navigate('prev')}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+            onClick={() => setSelectedDate(null)}
+            className="text-xs text-accent-dark hover:underline cursor-pointer font-medium"
           >
-            <ChevronLeft size={20} />
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-text-primary text-sm capitalize">{headerTitle}</span>
-            {!isToday(currentDate) && (
-              <button
-                onClick={goToToday}
-                className="text-xs text-accent-dark hover:underline cursor-pointer"
-              >
-                Aujourd&apos;hui
-              </button>
-            )}
-          </div>
-          <button
-            onClick={() => navigate('next')}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-          >
-            <ChevronRight size={20} />
+            Effacer
           </button>
         </div>
       )}
 
-      {/* Status Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button
-          onClick={() => setStatusFilter('')}
-          className={cn(
-            'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-            !statusFilter ? 'bg-text-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          )}
-        >
-          Tous
-        </button>
-        {(['planifie', 'assigne', 'en_cours', 'termine', 'verifie', 'annule'] as const).map(s => {
-          const count = turnovers.filter(t => t.status === s).length;
-          if (count === 0) return null;
-          return (
+      {/* Sub-filters for "Toutes" tab */}
+      {mainTab === 'toutes' && !selectedDate && (
+        <div className="flex gap-2">
+          {SUB_FILTERS.map(f => (
             <button
-              key={s}
-              onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
+              key={f.key}
+              onClick={() => setSubFilter(f.key)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-                statusFilter === s ? 'bg-text-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer',
+                subFilter === f.key
+                  ? 'bg-accent-dark text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-accent/30'
               )}
             >
-              {s === 'planifie' ? 'Planifié' : s === 'assigne' ? 'Assigné' : s === 'en_cours' ? 'En cours' : s === 'termine' ? 'Terminé' : s === 'verifie' ? 'Vérifié' : 'Annulé'} ({count})
+              {f.label}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-28 bg-white rounded-xl animate-pulse border border-gray-100" />
+          ))}
         </div>
+      ) : missionCount === 0 ? (
+        <EmptyState
+          icon={<Sparkles size={48} />}
+          title={
+            mainTab === 'aujourdhui'
+              ? "Aucune mission aujourd'hui"
+              : selectedDate
+                ? 'Aucune mission ce jour'
+                : mainTab === 'semaine'
+                  ? 'Aucune mission cette semaine'
+                  : subFilter === 'a_venir'
+                    ? 'Aucune mission à venir'
+                    : subFilter === 'passes'
+                      ? 'Aucune mission passée'
+                      : 'Aucune mission'
+          }
+          description={
+            mainTab === 'aujourdhui'
+              ? 'Profitez de votre journée !'
+              : 'Planifiez vos prochaines missions'
+          }
+          action={
+            <Button onClick={() => router.push('/turnovers/nouveau')}>
+              <Plus size={16} /> Nouvelle mission
+            </Button>
+          }
+        />
       ) : (
-        <>
-          {/* Week View */}
-          {view === 'semaine' && (
-            <WeekView
-              currentDate={currentDate}
-              groupedByDate={groupedByDate}
-              onDayClick={(d) => { setCurrentDate(d); setView('jour'); }}
-              onTurnoverClick={(id) => router.push(`/turnovers/${id}`)}
-            />
-          )}
+        <div className="space-y-4">
+          {/* Count */}
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider px-1">
+            {missionCount} mission{missionCount !== 1 ? 's' : ''}
+          </p>
 
-          {/* Month View */}
-          {view === 'mois' && (
-            <MonthView
-              currentDate={currentDate}
-              groupedByDate={groupedByDate}
-              onDayClick={(d) => { setCurrentDate(d); setView('jour'); }}
-            />
-          )}
-
-          {/* Day View */}
-          {view === 'jour' && (
-            <DayView
-              turnovers={filtered}
-              date={currentDate}
-              onTurnoverClick={(id) => router.push(`/turnovers/${id}`)}
-            />
-          )}
-
-          {/* List View */}
-          {view === 'liste' && (
-            <ListView
-              groupedByDate={groupedByDate}
-              onTurnoverClick={(id) => router.push(`/turnovers/${id}`)}
-            />
-          )}
-        </>
+          {/* Grouped by date */}
+          {sortedDates.map(dateStr => (
+            <div key={dateStr} className="space-y-2">
+              {/* Date header — show when multiple dates */}
+              {sortedDates.length > 1 && (
+                <DateHeader dateStr={dateStr} />
+              )}
+              {groupedByDate[dateStr].map(t => (
+                <MissionCard
+                  key={t.id}
+                  turnover={t}
+                  onClick={() => router.push(`/turnovers/${t.id}`)}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-// ─── Week View ───────────────────────────────────────────
-function WeekView({
-  currentDate, groupedByDate, onDayClick, onTurnoverClick
-}: {
-  currentDate: Date;
-  groupedByDate: Record<string, Turnover[]>;
-  onDayClick: (d: Date) => void;
-  onTurnoverClick: (id: string) => void;
-}) {
-  const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start, end: endOfWeek(currentDate, { weekStartsOn: 1 }) });
+// ─── Date Header ────────────────────────────────────────
+function DateHeader({ dateStr }: { dateStr: string }) {
+  const date = parseISO(dateStr);
+  const today = isToday(date);
+  const label = today
+    ? "Aujourd'hui"
+    : format(date, 'EEEE d MMMM', { locale: fr });
 
   return (
-    <div className="space-y-2">
-      {days.map(day => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const dayTurnovers = groupedByDate[dateStr] || [];
-        const today = isToday(day);
-
-        return (
-          <div key={dateStr}>
-            <button
-              onClick={() => onDayClick(day)}
-              className={cn(
-                'flex items-center gap-3 w-full text-left mb-1.5 px-2 py-1 rounded-lg transition-colors cursor-pointer',
-                today ? 'bg-accent-bg' : 'hover:bg-gray-50'
-              )}
-            >
-              <div className={cn(
-                'w-10 h-10 rounded-full flex flex-col items-center justify-center text-xs leading-tight',
-                today ? 'bg-accent-dark text-white font-bold' : 'bg-gray-100 text-gray-600'
-              )}>
-                <span className="uppercase text-[10px]">{formatWeekDay(day)}</span>
-                <span className="font-semibold">{formatDayNum(day)}</span>
-              </div>
-              <span className="text-sm text-gray-500">
-                {dayTurnovers.length} mission{dayTurnovers.length !== 1 ? 's' : ''}
-              </span>
-            </button>
-
-            {dayTurnovers.length > 0 && (
-              <div className="space-y-2 ml-2 pl-4 border-l-2 border-gray-100">
-                {dayTurnovers.map(t => (
-                  <TurnoverCard key={t.id} turnover={t} onClick={() => onTurnoverClick(t.id)} />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+    <div className="flex items-center gap-2 px-1 py-1">
+      <div className={cn(
+        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+        today ? 'bg-accent-dark text-white' : 'bg-gray-100 text-gray-600'
+      )}>
+        {format(date, 'd')}
+      </div>
+      <span className={cn(
+        'text-sm font-semibold capitalize',
+        today ? 'text-accent-dark' : 'text-gray-600'
+      )}>
+        {label}
+      </span>
     </div>
   );
 }
 
-// ─── Month View ──────────────────────────────────────────
-function MonthView({
-  currentDate, groupedByDate, onDayClick
+// ─── Mini Calendar ──────────────────────────────────────
+function MiniCalendar({
+  month, onMonthChange, turnoversPerDate, selectedDate, onSelectDate
 }: {
-  currentDate: Date;
-  groupedByDate: Record<string, Turnover[]>;
-  onDayClick: (d: Date) => void;
+  month: Date;
+  onMonthChange: (d: Date) => void;
+  turnoversPerDate: Record<string, number>;
+  selectedDate: Date | null;
+  onSelectDate: (d: Date | null) => void;
 }) {
-  const start = startOfMonth(currentDate);
-  const end = endOfMonth(currentDate);
-  const monthStart = startOfWeek(start, { weekStartsOn: 1 });
-  const monthEnd = endOfWeek(end, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const start = startOfMonth(month);
+  const end = endOfMonth(month);
+  const calStart = startOfWeek(start, { weekStartsOn: 1 });
+  const calEnd = endOfWeek(end, { weekStartsOn: 1 });
+  const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <button
+          onClick={() => onMonthChange(subMonths(month, 1))}
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <ChevronLeft size={18} className="text-gray-500" />
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-sm text-text-primary capitalize">
+            {format(month, 'MMMM yyyy', { locale: fr })}
+          </span>
+          {!isSameMonth(month, new Date()) && (
+            <button
+              onClick={() => onMonthChange(new Date())}
+              className="text-[10px] font-medium text-accent-dark bg-accent-bg px-2 py-0.5 rounded-full cursor-pointer hover:bg-accent-dark hover:text-white transition-colors"
+            >
+              Auj.
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => onMonthChange(addMonths(month, 1))}
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+        >
+          <ChevronRight size={18} className="text-gray-500" />
+        </button>
+      </div>
+
+      {/* Day of week headers */}
+      <div className="grid grid-cols-7 px-3 border-t border-gray-50">
         {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
-          <div key={d} className="py-2 text-center text-xs font-medium text-gray-500">
+          <div key={d} className="py-2 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
             {d}
           </div>
         ))}
       </div>
 
-      {/* Day cells */}
-      <div className="grid grid-cols-7">
+      {/* Day grid */}
+      <div className="grid grid-cols-7 px-3 pb-3 gap-y-0.5">
         {days.map(day => {
           const dateStr = format(day, 'yyyy-MM-dd');
-          const dayTurnovers = groupedByDate[dateStr] || [];
-          const inMonth = day.getMonth() === currentDate.getMonth();
+          const inMonth = isSameMonth(day, month);
           const today = isToday(day);
+          const selected = selectedDate ? isSameDay(day, selectedDate) : false;
+          const count = turnoversPerDate[dateStr] || 0;
 
           return (
             <button
               key={dateStr}
-              onClick={() => onDayClick(day)}
+              onClick={() => onSelectDate(selected ? null : day)}
               className={cn(
-                'relative min-h-[60px] sm:min-h-[80px] p-1 border-b border-r border-gray-50 transition-colors cursor-pointer',
-                !inMonth && 'opacity-40',
-                today && 'bg-accent-bg',
-                'hover:bg-gray-50'
+                'relative flex flex-col items-center py-1 rounded-lg transition-all duration-150 cursor-pointer',
+                !inMonth && 'opacity-25',
+                selected && 'bg-accent-dark',
+                !selected && today && 'bg-accent-bg',
+                !selected && !today && inMonth && 'hover:bg-gray-50'
               )}
             >
               <span className={cn(
-                'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs',
-                today ? 'bg-accent-dark text-white font-bold' : 'text-gray-700'
+                'w-7 h-7 flex items-center justify-center rounded-full text-xs',
+                selected
+                  ? 'text-white font-bold'
+                  : today
+                    ? 'text-accent-dark font-bold'
+                    : 'text-gray-700 font-medium'
               )}>
-                {formatDayNum(day)}
+                {format(day, 'd')}
               </span>
-              {dayTurnovers.length > 0 && (
-                <div className="mt-0.5 space-y-0.5">
-                  {dayTurnovers.slice(0, 3).map(t => (
-                    <div
-                      key={t.id}
+              {count > 0 && inMonth && (
+                <div className="flex gap-0.5 mt-0.5">
+                  {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                    <span
+                      key={i}
                       className={cn(
-                        'h-1.5 rounded-full',
-                        t.status === 'planifie' ? 'bg-status-planifie' :
-                        t.status === 'assigne' ? 'bg-status-assigne' :
-                        t.status === 'en_cours' ? 'bg-status-en-cours' :
-                        t.status === 'termine' ? 'bg-status-termine' :
-                        t.status === 'verifie' ? 'bg-status-verifie' :
-                        'bg-status-annule'
+                        'w-1 h-1 rounded-full',
+                        selected ? 'bg-white/80' : 'bg-accent-dark'
                       )}
                     />
                   ))}
-                  {dayTurnovers.length > 3 && (
-                    <span className="text-[9px] text-gray-400">+{dayTurnovers.length - 3}</span>
-                  )}
                 </div>
               )}
             </button>
@@ -393,134 +429,139 @@ function MonthView({
   );
 }
 
-// ─── Day View ────────────────────────────────────────────
-function DayView({
-  turnovers, date, onTurnoverClick
-}: {
-  turnovers: Turnover[];
-  date: Date;
-  onTurnoverClick: (id: string) => void;
-}) {
-  if (turnovers.length === 0) {
-    return (
-      <EmptyState
-        icon={<CalendarIcon size={48} />}
-        title="Aucune mission"
-        description={`Pas de mission prévue pour ${formatDay(date).toLowerCase()}`}
-      />
-    );
+// ─── Mission Card ───────────────────────────────────────
+const STATUS_CONFIG = {
+  planifie: { dot: 'bg-gray-400', text: 'text-gray-600', label: 'Planifiée', border: 'border-l-amber-400' },
+  assigne: { dot: 'bg-green-500', text: 'text-green-700', label: 'Assignée', border: 'border-l-green-400' },
+  en_cours: { dot: 'bg-blue-500', text: 'text-blue-700', label: 'En cours', border: 'border-l-blue-400' },
+  termine: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Terminée', border: 'border-l-emerald-500' },
+  verifie: { dot: 'bg-teal-500', text: 'text-teal-700', label: 'Vérifiée', border: 'border-l-teal-500' },
+  annule: { dot: 'bg-red-400', text: 'text-red-600', label: 'Annulée', border: 'border-l-red-400' },
+} as const;
+
+function MissionCard({ turnover, onClick }: { turnover: Turnover; onClick: () => void }) {
+  const sc = STATUS_CONFIG[turnover.status] || STATUS_CONFIG.planifie;
+
+  // Calculate duration from time_start and time_end
+  let duration = '';
+  if (turnover.time_start && turnover.time_end) {
+    const [sh, sm] = turnover.time_start.split(':').map(Number);
+    const [eh, em] = turnover.time_end.split(':').map(Number);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins > 0) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      duration = m > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${h}h`;
+    }
+  }
+
+  // Format guest_checkin date
+  let checkinLabel = '';
+  if (turnover.guest_checkin) {
+    try {
+      checkinLabel = format(parseISO(turnover.guest_checkin), "EEE d MMM", { locale: fr });
+    } catch {
+      checkinLabel = turnover.guest_checkin;
+    }
+  }
+
+  // Format guest_checkout date
+  let checkoutLabel = '';
+  if (turnover.guest_checkout) {
+    try {
+      checkoutLabel = format(parseISO(turnover.guest_checkout), "EEE d MMM", { locale: fr });
+    } catch {
+      checkoutLabel = turnover.guest_checkout;
+    }
   }
 
   return (
-    <div className="space-y-2">
-      {turnovers.map(t => (
-        <TurnoverCard key={t.id} turnover={t} onClick={() => onTurnoverClick(t.id)} expanded />
-      ))}
-    </div>
-  );
-}
+    <div
+      onClick={onClick}
+      className={cn(
+        'bg-white rounded-xl border border-gray-100 shadow-sm',
+        'border-l-[4px]', sc.border,
+        'hover:shadow-md hover:border-gray-200 transition-all duration-200 cursor-pointer',
+        'flex items-center'
+      )}
+    >
+      {/* Content */}
+      <div className="flex-1 min-w-0 p-4 space-y-2">
+        {/* Row 1: Apartment name + Badge */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-text-primary truncate text-[15px]">
+            {turnover.apartment?.name || 'Appartement'}
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 uppercase tracking-wide shrink-0">
+            🧹 Ménage
+          </span>
+        </div>
 
-// ─── List View ───────────────────────────────────────────
-function ListView({
-  groupedByDate, onTurnoverClick
-}: {
-  groupedByDate: Record<string, Turnover[]>;
-  onTurnoverClick: (id: string) => void;
-}) {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const sortedDates = Object.keys(groupedByDate).sort();
+        {/* Row 2: Cleaner name */}
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          {turnover.cleaner ? (
+            <>
+              <Sparkles size={13} className="text-accent-dark shrink-0" />
+              <span className="font-medium">{turnover.cleaner.name}</span>
+            </>
+          ) : (
+            <span className="text-gray-400 italic text-xs">Non assignée</span>
+          )}
+        </div>
 
-  if (sortedDates.length === 0) {
-    return (
-      <EmptyState
-        icon={<CalendarIcon size={48} />}
-        title="Aucune mission"
-        description="Aucune mission trouvée pour cette période"
-      />
-    );
-  }
-
-  const upcoming = sortedDates.filter(d => d > todayStr);
-  const today = sortedDates.filter(d => d === todayStr);
-  const past = sortedDates.filter(d => d < todayStr).reverse();
-
-  const renderSection = (dates: string[], label: string, accent?: boolean) => {
-    if (dates.length === 0) return null;
-    return (
-      <div className="space-y-3">
-        <h2 className={cn(
-          'text-xs font-bold uppercase tracking-wider px-2 py-1 rounded',
-          accent ? 'text-accent-dark bg-accent-bg' : 'text-gray-400'
-        )}>
-          {label} ({dates.reduce((n, d) => n + (groupedByDate[d]?.length || 0), 0)})
-        </h2>
-        {dates.map(date => (
-          <section key={date}>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 capitalize">
-              {formatDay(date)}
-            </h3>
-            <div className="space-y-2">
-              {groupedByDate[date].map(t => (
-                <TurnoverCard key={t.id} turnover={t} onClick={() => onTurnoverClick(t.id)} expanded />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      {renderSection(today, "Aujourd'hui", true)}
-      {renderSection(upcoming, 'À venir')}
-      {renderSection(past, 'Passé')}
-    </div>
-  );
-}
-
-// ─── Turnover Card ───────────────────────────────────────
-function TurnoverCard({
-  turnover, onClick, expanded
-}: {
-  turnover: Turnover;
-  onClick: () => void;
-  expanded?: boolean;
-}) {
-  return (
-    <Card hover onClick={onClick}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-semibold text-text-primary truncate">
-              {turnover.apartment?.name || 'Appartement'}
-            </span>
-            <StatusBadge status={turnover.status} />
+        {/* Row 3: Time info */}
+        {(turnover.time_start || duration) && (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            {turnover.time_start && (
+              <span className="flex items-center gap-1">
+                <Clock size={12} className="shrink-0" />
+                {formatTime(turnover.time_start)}
+              </span>
+            )}
+            {duration && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="font-medium text-gray-600">{duration}</span>
+              </>
+            )}
+            {turnover.checkin_time && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span>Check-in {formatTime(turnover.checkin_time)}</span>
+              </>
+            )}
           </div>
-          <p className="text-sm text-gray-500 truncate">
-            {turnover.apartment?.client?.name || 'Client'}
-            {turnover.cleaner && ` · ${turnover.cleaner.name}`}
-          </p>
-          {expanded && (
-            <div className="flex items-center gap-4 mt-1.5 text-sm text-gray-500">
-              {turnover.time_start && (
-                <span className="flex items-center gap-1">
-                  <Clock size={13} /> {formatTime(turnover.time_start)}
-                </span>
-              )}
-              {turnover.apartment?.neighborhood && (
-                <span>{turnover.apartment.neighborhood}</span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="text-right shrink-0 ml-3">
-          <div className="font-semibold text-accent-dark">{formatMAD(Number(turnover.revenue))}</div>
-          {!expanded && turnover.time_start && (
-            <div className="text-xs text-gray-400">{formatTime(turnover.time_start)}</div>
-          )}
+        )}
+
+        {/* Row 4: Guest checkout / checkin info */}
+        {(checkoutLabel || checkinLabel) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            {checkoutLabel && (
+              <span className="flex items-center gap-1">
+                <LogOut size={11} className="shrink-0 text-gray-400" />
+                <span>Départ <span className="capitalize">{checkoutLabel}</span></span>
+              </span>
+            )}
+            {checkinLabel && (
+              <span className="flex items-center gap-1">
+                <LogIn size={11} className="shrink-0 text-gray-400" />
+                <span>Arrivée <span className="capitalize">{checkinLabel}</span></span>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Row 5: Status */}
+        <div className="flex items-center gap-1.5 pt-0.5">
+          <span className={cn('w-2 h-2 rounded-full shrink-0', sc.dot)} />
+          <span className={cn('text-xs font-semibold', sc.text)}>{sc.label}</span>
         </div>
       </div>
-    </Card>
+
+      {/* Right chevron */}
+      <div className="pr-3 shrink-0">
+        <ChevronRight size={18} className="text-gray-300" />
+      </div>
+    </div>
   );
 }
