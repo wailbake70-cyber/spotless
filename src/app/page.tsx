@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Plus, AlertTriangle, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Calendar, Plus, AlertTriangle, TrendingUp, Clock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/badge';
@@ -15,6 +15,9 @@ export default function Dashboard() {
   const [todayTurnovers, setTodayTurnovers] = useState<Turnover[]>([]);
   const [weekStats, setWeekStats] = useState({ count: 0, revenue: 0, costFemme: 0, margin: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
+  const [showRevenue, setShowRevenue] = useState(false);
+  const [showCost, setShowCost] = useState(false);
+  const [showMargin, setShowMargin] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -85,16 +88,31 @@ export default function Dashboard() {
           <div className="text-2xl font-bold text-accent-dark">{weekStats.count}</div>
           <div className="text-xs text-gray-500 mt-1">Cette semaine</div>
         </Card>
-        <Card className="text-center">
-          <div className="text-2xl font-bold text-text-primary">{formatMAD(weekStats.revenue)}</div>
+        <Card className="text-center cursor-pointer" onClick={() => setShowRevenue(!showRevenue)}>
+          <div className="flex items-center justify-center gap-2">
+            <div className="text-2xl font-bold text-text-primary">
+              {showRevenue ? formatMAD(weekStats.revenue) : '•••••'}
+            </div>
+            {showRevenue ? <EyeOff size={16} className="text-gray-400" /> : <Eye size={16} className="text-gray-400" />}
+          </div>
           <div className="text-xs text-gray-500 mt-1">Revenus clients</div>
         </Card>
-        <Card className="text-center">
-          <div className="text-2xl font-bold text-status-annule">{formatMAD(weekStats.costFemme)}</div>
+        <Card className="text-center cursor-pointer" onClick={() => setShowCost(!showCost)}>
+          <div className="flex items-center justify-center gap-2">
+            <div className="text-2xl font-bold text-status-annule">
+              {showCost ? formatMAD(weekStats.costFemme) : '•••••'}
+            </div>
+            {showCost ? <EyeOff size={16} className="text-gray-400" /> : <Eye size={16} className="text-gray-400" />}
+          </div>
           <div className="text-xs text-gray-500 mt-1">Coût femmes</div>
         </Card>
-        <Card className="text-center">
-          <div className={`text-2xl font-bold ${weekStats.margin >= 0 ? 'text-status-termine' : 'text-status-annule'}`}>{formatMAD(weekStats.margin)}</div>
+        <Card className="text-center cursor-pointer" onClick={() => setShowMargin(!showMargin)}>
+          <div className="flex items-center justify-center gap-2">
+            <div className={`text-2xl font-bold ${weekStats.margin >= 0 ? 'text-status-termine' : 'text-status-annule'}`}>
+              {showMargin ? formatMAD(weekStats.margin) : '•••••'}
+            </div>
+            {showMargin ? <EyeOff size={16} className="text-gray-400" /> : <Eye size={16} className="text-gray-400" />}
+          </div>
           <div className="text-xs text-gray-500 mt-1">Ma marge</div>
         </Card>
       </div>
