@@ -2,11 +2,11 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
-  // Simple auth check - require a secret token
-  const { token } = await request.json();
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get('token');
   if (token !== 'spotless-seed-2026') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized - pass ?token=spotless-seed-2026' }, { status: 401 });
   }
 
   const cookieStore = await cookies();
