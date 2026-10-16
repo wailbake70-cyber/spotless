@@ -56,7 +56,7 @@ export async function GET(request: Request) {
   ];
 
   // Step 3: Match apartment names to IDs
-  const records = [];
+  const records: { apartment_id: string; date: string; status: string; source: 'manual' }[] = [];
   const notFound: string[] = [];
 
   for (const t of turnoversToInsert) {
