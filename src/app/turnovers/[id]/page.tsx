@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Edit, Clock, MapPin, Key, Wifi, Phone,
   Star, AlertTriangle, DollarSign, CheckCircle, XCircle,
-  User, Calendar, Wrench, ChevronRight
+  User, Calendar, Wrench, ChevronRight, Trash2
 } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,8 @@ export default function TurnoverDetailPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [showAnomalies, setShowAnomalies] = useState(false);
   const [showQuality, setShowQuality] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -110,6 +112,13 @@ export default function TurnoverDetailPage() {
     loadTurnover();
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    const supabase = createClient();
+    await supabase.from('turnovers').delete().eq('id', params.id as string);
+    router.push('/turnovers');
+  }
+
   async function handleUpdate(formData: FormData) {
     const supabase = createClient();
     await supabase.from('turnovers').update({
@@ -159,9 +168,14 @@ export default function TurnoverDetailPage() {
         <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
-        <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
-          <Edit size={16} /> Modifier
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowDelete(true)}>
+            <Trash2 size={16} className="text-status-annule" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
+            <Edit size={16} /> Modifier
+          </Button>
+        </div>
       </div>
 
       {/* Title Card */}
@@ -510,6 +524,19 @@ export default function TurnoverDetailPage() {
             <Button type="submit" className="flex-1">Enregistrer</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDelete} onClose={() => setShowDelete(false)} title="Supprimer cette mission ?">
+        <p className="text-sm text-gray-600 mb-4">
+          Cette action est irréversible. La mission du <strong>{formatDate(turnover.date)}</strong> pour <strong>{apt?.name}</strong> sera supprimée.
+        </p>
+        <div className="flex gap-3">
+          <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowDelete(false)}>Annuler</Button>
+          <Button type="button" variant="danger" className="flex-1" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Suppression...' : 'Supprimer'}
+          </Button>
+        </div>
       </Modal>
 
       {/* Edit Modal */}

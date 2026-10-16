@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Copy, Key, MapPin, DollarSign, Calendar, Wrench } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, Key, MapPin, DollarSign, Calendar, Wrench, Trash2 } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge, TypeBadge, StatusBadge } from '@/components/ui/badge';
@@ -25,6 +25,8 @@ export default function ApartmentDetailPage() {
   const [turnovers, setTurnovers] = useState<Turnover[]>([]);
   const [tab, setTab] = useState<Tab>('info');
   const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,6 +49,13 @@ export default function ApartmentDetailPage() {
     if (aptRes.data) setApt(aptRes.data as any);
     if (turnoversRes.data) setTurnovers(turnoversRes.data as Turnover[]);
     setLoading(false);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const supabase = createClient();
+    await supabase.from('apartments').delete().eq('id', params.id as string);
+    router.push('/appartements');
   }
 
   async function handleUpdate(formData: FormData) {
@@ -89,9 +98,14 @@ export default function ApartmentDetailPage() {
         <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
           <ArrowLeft size={16} /> Retour
         </button>
-        <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
-          <Edit size={16} /> Modifier
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowDelete(true)}>
+            <Trash2 size={16} className="text-status-annule" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
+            <Edit size={16} /> Modifier
+          </Button>
+        </div>
       </div>
 
       {/* Title Card */}
@@ -228,6 +242,19 @@ export default function ApartmentDetailPage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDelete} onClose={() => setShowDelete(false)} title="Supprimer cet appartement ?">
+        <p className="text-sm text-gray-600 mb-4">
+          Cette action est irréversible. L&apos;appartement <strong>{apt.name}</strong> et toutes ses données seront supprimés.
+        </p>
+        <div className="flex gap-3">
+          <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowDelete(false)}>Annuler</Button>
+          <Button type="button" variant="danger" className="flex-1" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Suppression...' : 'Supprimer'}
+          </Button>
+        </div>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal isOpen={showEdit} onClose={() => setShowEdit(false)} title="Modifier appartement" size="lg">
