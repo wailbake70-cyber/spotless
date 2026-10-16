@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Users, Building2, Sparkles, Settings } from 'lucide-react';
+import { Home, Calendar, Users, Building2, Sparkles, Settings, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MAIN_NAV = [
   { href: '/', label: 'Dashboard', icon: Home },
   { href: '/turnovers', label: 'Missions', icon: Calendar },
+  { href: '/finances', label: 'Finances', icon: Wallet },
 ];
 
 const GESTION_NAV = [
