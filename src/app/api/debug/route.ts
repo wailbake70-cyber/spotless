@@ -15,7 +15,14 @@ export async function GET(request: Request) {
   };
 
   if (showKey) {
-    results.anon_key_full = key;
+    // Split key into chunks to prevent truncation by fetchers
+    const chunkSize = 40;
+    const chunks: string[] = [];
+    for (let i = 0; i < key.length; i += chunkSize) {
+      chunks.push(key.substring(i, i + chunkSize));
+    }
+    results.key_chunks = chunks;
+    results.key_chunk_count = chunks.length;
   }
 
   // Test 1: Can we reach the Supabase URL?
