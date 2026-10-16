@@ -49,11 +49,12 @@ export default function Dashboard() {
     const supabase = createClient();
     const today = new Date().toISOString().split('T')[0];
 
-    // Today's turnovers
+    // Today's turnovers — only non-completed (à faire)
     const { data: turnovers } = await supabase
       .from('turnovers')
       .select('*, apartment:apartments(*, client:clients(*)), cleaner:cleaners(*)')
       .eq('date', today)
+      .not('status', 'in', '("termine","verifie","annule")')
       .order('time_start');
 
     setTodayTurnovers((turnovers as Turnover[]) || []);
@@ -153,7 +154,7 @@ export default function Dashboard() {
             {formatDay(new Date())}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {todayTurnovers.length} turnover{todayTurnovers.length !== 1 ? 's' : ''} prévu{todayTurnovers.length !== 1 ? 's' : ''}
+            {todayTurnovers.length > 0 ? `${todayTurnovers.length} à faire aujourd'hui` : 'Rien à faire aujourd\'hui'}
           </p>
         </div>
         <Button onClick={() => router.push('/turnovers/nouveau')}>
@@ -270,7 +271,7 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle>
             <Calendar size={20} className="inline mr-2 text-accent-dark" />
-            Turnovers du jour
+            À faire aujourd&apos;hui
           </CardTitle>
         </CardHeader>
 
@@ -283,7 +284,7 @@ export default function Dashboard() {
         ) : todayTurnovers.length === 0 ? (
           <Card className="text-center py-8">
             <CheckCircle size={40} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500">Aucun turnover prévu aujourd&apos;hui</p>
+            <p className="text-gray-500">Tout est fait pour aujourd&apos;hui 👏</p>
             <Button variant="secondary" className="mt-3" onClick={() => router.push('/turnovers/nouveau')}>
               <Plus size={16} /> Planifier un turnover
             </Button>

@@ -457,18 +457,16 @@ export default function TurnoverDetailPage() {
       )}
 
       {/* Status Action Bar */}
-      {turnover.status !== 'annule' && turnover.status !== 'verifie' && (
+      {turnover.status !== 'annule' && turnover.status !== 'verifie' && turnover.status !== 'termine' && (
         <div className="fixed bottom-20 lg:bottom-6 left-0 right-0 lg:left-60 px-4 lg:px-6">
           <div className="max-w-5xl mx-auto flex gap-3">
-            {nextStatus && (
-              <Button
-                className="flex-1 h-12 text-base"
-                onClick={() => updateStatus(nextStatus)}
-              >
-                <ChevronRight size={20} />
-                {TURNOVER_STATUSES[nextStatus].label}
-              </Button>
-            )}
+            <Button
+              className="flex-1 h-12 text-base"
+              onClick={() => updateStatus('verifie')}
+            >
+              <CheckCircle size={20} />
+              Fait ✓
+            </Button>
             <Button
               variant="danger"
               size="sm"

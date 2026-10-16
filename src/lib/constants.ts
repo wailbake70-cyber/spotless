@@ -1,21 +1,22 @@
 // Status values and labels
+// Simplified: À faire → Fait (old statuses kept for DB compatibility)
 export const TURNOVER_STATUSES = {
-  planifie: { label: 'Planifié', color: 'bg-status-planifie', textColor: 'text-white' },
-  assigne: { label: 'Assigné', color: 'bg-status-assigne', textColor: 'text-black' },
+  planifie: { label: 'À faire', color: 'bg-status-planifie', textColor: 'text-white' },
+  assigne: { label: 'À faire', color: 'bg-status-planifie', textColor: 'text-white' },
   en_cours: { label: 'En cours', color: 'bg-status-en-cours', textColor: 'text-white' },
-  termine: { label: 'Terminé', color: 'bg-status-termine', textColor: 'text-white' },
-  verifie: { label: 'Vérifié', color: 'bg-status-verifie', textColor: 'text-white' },
+  termine: { label: 'Fait', color: 'bg-status-termine', textColor: 'text-white' },
+  verifie: { label: 'Fait', color: 'bg-status-verifie', textColor: 'text-white' },
   annule: { label: 'Annulé', color: 'bg-status-annule', textColor: 'text-white' },
 } as const;
 
 export type TurnoverStatus = keyof typeof TURNOVER_STATUSES;
 
-// Status flow: planifié → assigné → en_cours → terminé → vérifié
+// Simplified flow: À faire → Fait (one click)
 export const STATUS_TRANSITIONS: Record<TurnoverStatus, TurnoverStatus | null> = {
-  planifie: 'assigne',
-  assigne: 'en_cours',
-  en_cours: 'termine',
-  termine: 'verifie',
+  planifie: 'verifie',
+  assigne: 'verifie',
+  en_cours: 'verifie',
+  termine: null,
   verifie: null,
   annule: null,
 };

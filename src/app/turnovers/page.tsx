@@ -431,12 +431,12 @@ function MiniCalendar({
 
 // ─── Mission Card ───────────────────────────────────────
 const STATUS_CONFIG = {
-  planifie: { dot: 'bg-gray-400', text: 'text-gray-600', label: 'Planifiée', border: 'border-l-amber-400' },
-  assigne: { dot: 'bg-green-500', text: 'text-green-700', label: 'Assignée', border: 'border-l-green-400' },
+  planifie: { dot: 'bg-amber-400', text: 'text-amber-700', label: 'À faire', border: 'border-l-amber-400' },
+  assigne: { dot: 'bg-amber-400', text: 'text-amber-700', label: 'À faire', border: 'border-l-amber-400' },
   en_cours: { dot: 'bg-blue-500', text: 'text-blue-700', label: 'En cours', border: 'border-l-blue-400' },
-  termine: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Terminée', border: 'border-l-emerald-500' },
-  verifie: { dot: 'bg-teal-500', text: 'text-teal-700', label: 'Vérifiée', border: 'border-l-teal-500' },
-  annule: { dot: 'bg-red-400', text: 'text-red-600', label: 'Annulée', border: 'border-l-red-400' },
+  termine: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Fait ✓', border: 'border-l-emerald-500' },
+  verifie: { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Fait ✓', border: 'border-l-emerald-500' },
+  annule: { dot: 'bg-red-400', text: 'text-red-600', label: 'Annulé', border: 'border-l-red-400' },
 } as const;
 
 function MissionCard({ turnover, onClick }: { turnover: Turnover; onClick: () => void }) {
