@@ -91,8 +91,8 @@ export default function FinancesPage() {
   const [period, setPeriod] = useState<Period>('mois');
   const [tab, setTab] = useState<Tab>('resume');
   const [loading, setLoading] = useState(true);
-  const [showFinances, setShowFinances] = useState(false);
-  const [expandedCostBreakdown, setExpandedCostBreakdown] = useState(false);
+  const [showFinances, setShowFinances] = useState(true);
+  const [expandedCostBreakdown, setExpandedCostBreakdown] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {

@@ -54,7 +54,7 @@ export default function Dashboard() {
   const [weekStats, setWeekStats] = useState<WeekStats>({ count: 0, revenue: 0, costTotal: 0, margin: 0, pending: 0, pendingAmount: 0 });
   const [lastWeekStats, setLastWeekStats] = useState<WeekStats>({ count: 0, revenue: 0, costTotal: 0, margin: 0, pending: 0, pendingAmount: 0 });
   const [loading, setLoading] = useState(true);
-  const [showFinances, setShowFinances] = useState(false);
+  const [showFinances, setShowFinances] = useState(true);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('3m');
 
