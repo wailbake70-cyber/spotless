@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Phone, MapPin, Edit, Trash2, Calendar, Star, DollarSign } from 'lucide-react';
+import {
+  ArrowLeft, Phone, MapPin, Edit, Trash2, Calendar, Star,
+  CheckCircle, AlertCircle, ChevronRight
+} from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge, StatusBadge } from '@/components/ui/badge';
@@ -35,7 +38,7 @@ export default function CleanerDetailPage() {
         .select('*, apartment:apartments(name, neighborhood)')
         .eq('cleaner_id', id)
         .order('date', { ascending: false })
-        .limit(20),
+        .limit(50),
     ]);
 
     if (cleanerRes.data) setCleaner(cleanerRes.data);
@@ -68,15 +71,25 @@ export default function CleanerDetailPage() {
     router.push('/cleaners');
   }
 
+  // Stats calculations
+  const stats = useMemo(() => {
+    const completed = turnovers.filter(t => t.status === 'termine' || t.status === 'verifie');
+    const totalDue = turnovers.reduce((sum, t) => sum + (Number(t.cost_femme) || 0), 0);
+    const totalPaid = turnovers.filter(t => t.is_paid_to_cleaner).reduce((sum, t) => sum + (Number(t.cost_femme) || 0), 0);
+    const totalUnpaid = totalDue - totalPaid;
+    const unpaidTurnovers = turnovers.filter(t => !t.is_paid_to_cleaner && (Number(t.cost_femme) || 0) > 0);
+    const avgRating = turnovers.filter(t => t.quality_rating).reduce(
+      (acc, t, _, arr) => acc + (t.quality_rating! / arr.length), 0
+    );
+
+    return { completedCount: completed.length, totalDue, totalPaid, totalUnpaid, unpaidTurnovers, avgRating };
+  }, [turnovers]);
+
   if (loading) return <div className="p-4 lg:p-6"><div className="h-40 bg-white rounded-xl animate-pulse" /></div>;
   if (!cleaner) return <div className="p-4 lg:p-6 text-center text-gray-500">Collaboratrice introuvable</div>;
 
-  const totalEarned = turnovers.reduce((sum, t) => sum + (Number(t.cost_femme) || 0), 0);
-  const avgRating = turnovers.filter(t => t.quality_rating).reduce((acc, t, _, arr) => acc + (t.quality_rating! / arr.length), 0);
-  const completedCount = turnovers.filter(t => t.status === 'termine' || t.status === 'verifie').length;
-
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
+    <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto pb-28 lg:pb-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-text-primary cursor-pointer">
@@ -125,26 +138,80 @@ export default function CleanerDetailPage() {
         )}
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Stats — Fixed payment tracking */}
+      <div className="grid grid-cols-2 gap-3">
         <Card className="text-center">
-          <div className="text-lg font-bold text-accent-dark">{completedCount}</div>
-          <div className="text-xs text-gray-500">Turnovers</div>
-        </Card>
-        <Card className="text-center">
-          <div className="text-lg font-bold text-text-primary">{formatMAD(totalEarned)}</div>
-          <div className="text-xs text-gray-500">Total versé</div>
+          <div className="text-lg font-bold text-accent-dark">{stats.completedCount}</div>
+          <div className="text-xs text-gray-500">Turnovers faits</div>
         </Card>
         <Card className="text-center">
           <div className="flex items-center justify-center gap-1">
             <Star size={14} className="text-accent-dark fill-accent-dark" />
             <span className="text-lg font-bold text-text-primary">
-              {avgRating > 0 ? avgRating.toFixed(1) : '—'}
+              {stats.avgRating > 0 ? stats.avgRating.toFixed(1) : '—'}
             </span>
           </div>
           <div className="text-xs text-gray-500">Note moy.</div>
         </Card>
       </div>
+
+      {/* Payment Summary */}
+      <Card>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+          <Calendar size={15} className="text-accent-dark" />
+          Paiements
+        </h3>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Total dû (tous TO)</span>
+            <span className="font-semibold">{formatMAD(stats.totalDue)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-1.5 text-gray-600">
+              <CheckCircle size={13} className="text-emerald-600" /> Déjà versé
+            </span>
+            <span className="font-semibold text-emerald-700">{formatMAD(stats.totalPaid)}</span>
+          </div>
+          {stats.totalUnpaid > 0 && (
+            <div className="flex items-center justify-between text-sm pt-1 border-t">
+              <span className="flex items-center gap-1.5 text-orange-700 font-medium">
+                <AlertCircle size={13} /> Reste à payer
+              </span>
+              <span className="font-bold text-orange-700">{formatMAD(stats.totalUnpaid)}</span>
+            </div>
+          )}
+          {stats.totalUnpaid === 0 && stats.totalDue > 0 && (
+            <div className="flex items-center justify-center gap-1.5 text-emerald-600 text-sm pt-1 border-t">
+              <CheckCircle size={14} /> Tout est payé
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Unpaid turnovers detail */}
+      {stats.unpaidTurnovers.length > 0 && (
+        <Card className="border-l-4 border-l-orange-400">
+          <h3 className="text-xs font-semibold text-orange-700 uppercase tracking-wider mb-2">
+            À payer ({stats.unpaidTurnovers.length})
+          </h3>
+          <div className="space-y-1.5">
+            {stats.unpaidTurnovers.map(t => (
+              <div
+                key={t.id}
+                onClick={() => router.push(`/turnovers/${t.id}`)}
+                className="flex items-center justify-between text-sm py-1 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded"
+              >
+                <div className="flex items-center gap-2 text-gray-600">
+                  <span>{formatDateShort(t.date)}</span>
+                  <span className="text-gray-300">·</span>
+                  <span>{(t as any).apartment?.name || 'Appart'}</span>
+                </div>
+                <span className="font-medium text-orange-700">{formatMAD(Number(t.cost_femme))}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Recent Turnovers */}
       {turnovers.length > 0 && (
@@ -154,7 +221,7 @@ export default function CleanerDetailPage() {
             Derniers turnovers
           </CardTitle>
           <div className="space-y-2">
-            {turnovers.map(t => (
+            {turnovers.slice(0, 20).map(t => (
               <Card
                 key={t.id}
                 hover
@@ -162,11 +229,16 @@ export default function CleanerDetailPage() {
                 className="flex items-center justify-between"
               >
                 <div>
-                  <span className="font-medium">{(t as any).apartment?.name}</span>
+                  <span className="font-medium">{(t as any).apartment?.name || 'Appart'}</span>
                   <span className="text-sm text-gray-500 ml-2">{formatDateShort(t.date)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={t.status} />
+                  {t.is_paid_to_cleaner ? (
+                    <CheckCircle size={14} className="text-emerald-500" />
+                  ) : (
+                    <AlertCircle size={14} className="text-orange-400" />
+                  )}
                   {t.quality_rating && (
                     <span className="text-sm text-accent-dark">{'★'.repeat(t.quality_rating)}</span>
                   )}
