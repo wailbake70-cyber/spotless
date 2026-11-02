@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Wallet, Users, Sparkles } from 'lucide-react';
+import { Home, Calendar, Wallet, Users, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TABS = [
   { href: '/', label: 'Accueil', icon: Home },
   { href: '/turnovers', label: 'Missions', icon: Calendar },
   { href: '/finances', label: 'Finances', icon: Wallet },
+  { href: '/factures', label: 'Factures', icon: FileText },
   { href: '/clients', label: 'Clients', icon: Users },
-  { href: '/cleaners', label: 'Équipe', icon: Sparkles },
 ];
 
 export function BottomTabs() {
