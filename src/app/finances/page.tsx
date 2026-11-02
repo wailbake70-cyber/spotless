@@ -5,7 +5,8 @@ import {
   Eye, EyeOff, TrendingUp, TrendingDown, Users, Sparkles,
   AlertCircle, CheckCircle, ChevronRight, ChevronDown, ChevronUp,
   Wallet, ArrowDownLeft, ArrowUpRight, Copy, Check,
-  CircleDollarSign, PiggyBank, Activity, ArrowUp, ArrowDown, Minus
+  CircleDollarSign, PiggyBank, Activity, ArrowUp, ArrowDown, Minus,
+  FileText, Filter, Calendar, Building2, X
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
@@ -22,7 +23,7 @@ import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 
 type Period = 'semaine' | 'mois' | 'mois_dernier' | 'quinzaine_1' | 'quinzaine_2' | 'tout';
-type Tab = 'resume' | 'clients' | 'femmes' | 'impayes';
+type Tab = 'resume' | 'clients' | 'femmes' | 'impayes' | 'factures';
 
 interface TurnoverRow {
   id: string;
@@ -142,6 +143,7 @@ const TABS: { key: Tab; label: string; mobileLabel: string }[] = [
   { key: 'clients', label: 'Par client', mobileLabel: 'Clients' },
   { key: 'femmes', label: 'Par femme', mobileLabel: 'FM' },
   { key: 'impayes', label: 'Impayés', mobileLabel: 'Dû' },
+  { key: 'factures', label: 'Factures', mobileLabel: 'Factures' },
 ];
 
 // Calculate totals from a list of turnovers
@@ -191,6 +193,14 @@ export default function FinancesPage() {
   const [showFinances, setShowFinances] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Factures tab state
+  const [factureFrom, setFactureFrom] = useState(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [factureTo, setFactureTo] = useState(() => format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [factureAptFilter, setFactureAptFilter] = useState<string>('all');
+  const [factureClientFilter, setFactureClientFilter] = useState<string>('all');
+  const [factureData, setFactureData] = useState<TurnoverRow[]>([]);
+  const [factureLoading, setFactureLoading] = useState(false);
+
   const SELECT_FIELDS = 'id, date, revenue, cost_femme, cost_transport, cost_produits, cost_pressing, cost_other, cost_other_label, is_paid_by_client, client_paid_date, is_paid_to_cleaner, cleaner_paid_date, status, apartment:apartments(name, type, client:clients(id, name, payment_method, payment_frequency)), cleaner:cleaners(id, name)';
 
   useEffect(() => {
@@ -233,6 +243,29 @@ export default function FinancesPage() {
     setPrevTurnovers(((prevResult as { data: unknown[] | null }).data as unknown as TurnoverRow[]) || []);
     setLoading(false);
   }
+
+  async function loadFactureData() {
+    setFactureLoading(true);
+    const supabase = createClient();
+    let query = supabase
+      .from('turnovers')
+      .select(SELECT_FIELDS)
+      .neq('status', 'annule')
+      .gte('date', factureFrom)
+      .lte('date', factureTo)
+      .order('date', { ascending: true });
+
+    const { data } = await query;
+    setFactureData((data as unknown as TurnoverRow[]) || []);
+    setFactureLoading(false);
+  }
+
+  // Load facture data when tab switches to factures or filters change
+  useEffect(() => {
+    if (tab === 'factures') {
+      loadFactureData();
+    }
+  }, [tab, factureFrom, factureTo]);
 
   // ─── CALCULATIONS ─────────────────────────────
   const totals = useMemo(() => calcTotals(turnovers), [turnovers]);
@@ -369,6 +402,103 @@ export default function FinancesPage() {
     if (period === 'quinzaine_2') return getQuinzaineDates(2).label;
     return 'Depuis le début';
   }, [period]);
+
+  // Facture computed data
+  const factureFiltered = useMemo(() => {
+    let data = factureData;
+    if (factureAptFilter !== 'all') {
+      data = data.filter(t => t.apartment?.name === factureAptFilter);
+    }
+    if (factureClientFilter !== 'all') {
+      data = data.filter(t => t.apartment?.client?.id === factureClientFilter);
+    }
+    return data;
+  }, [factureData, factureAptFilter, factureClientFilter]);
+
+  // Unique apartments & clients from facture data for filters
+  const factureApartments = useMemo(() => {
+    const names = new Set<string>();
+    for (const t of factureData) {
+      if (t.apartment?.name) names.add(t.apartment.name);
+    }
+    return Array.from(names).sort();
+  }, [factureData]);
+
+  const factureClients = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const t of factureData) {
+      const c = t.apartment?.client;
+      if (c?.id) map[c.id] = c.name;
+    }
+    return Object.entries(map).sort(([, a], [, b]) => a.localeCompare(b));
+  }, [factureData]);
+
+  // Group facture data by client
+  const factureByClient = useMemo(() => {
+    const map: Record<string, { name: string; turnovers: TurnoverRow[]; total: number; paid: number; unpaid: number }> = {};
+    for (const t of factureFiltered) {
+      const client = t.apartment?.client;
+      const clientId = client?.id || 'none';
+      const clientName = client?.name || 'Sans client';
+      if (!map[clientId]) map[clientId] = { name: clientName, turnovers: [], total: 0, paid: 0, unpaid: 0 };
+      const rev = Number(t.revenue) || 0;
+      map[clientId].turnovers.push(t);
+      map[clientId].total += rev;
+      if (t.is_paid_by_client) map[clientId].paid += rev;
+      else map[clientId].unpaid += rev;
+    }
+    return Object.entries(map)
+      .map(([id, data]) => ({ id, ...data }))
+      .sort((a, b) => b.total - a.total);
+  }, [factureFiltered]);
+
+  // Generate invoice text for facture tab
+  function generateFactureText(clientId: string) {
+    const clientData = factureByClient.find(c => c.id === clientId);
+    if (!clientData) return '';
+    const fromLabel = format(parseISO(factureFrom), 'd MMM yyyy', { locale: fr });
+    const toLabel = format(parseISO(factureTo), 'd MMM yyyy', { locale: fr });
+    let text = `📋 RELEVÉ SPOTLESS\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `Client: ${clientData.name}\n`;
+    text += `Période: ${fromLabel} → ${toLabel}\n`;
+    if (factureAptFilter !== 'all') text += `Appartement: ${factureAptFilter}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    const grouped: Record<string, TurnoverRow[]> = {};
+    for (const t of clientData.turnovers) {
+      const aptName = t.apartment?.name || 'Appart';
+      if (!grouped[aptName]) grouped[aptName] = [];
+      grouped[aptName].push(t);
+    }
+
+    for (const [aptName, tos] of Object.entries(grouped)) {
+      text += `🏠 ${aptName}\n`;
+      let subtotal = 0;
+      for (const t of tos) {
+        const rev = Number(t.revenue) || 0;
+        subtotal += rev;
+        const paid = t.is_paid_by_client ? '✅' : '⏳';
+        text += `  ${paid} ${format(parseISO(t.date), 'dd/MM', { locale: fr })} — ${rev} MAD\n`;
+      }
+      text += `  Sous-total: ${subtotal} MAD\n\n`;
+    }
+
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💰 TOTAL: ${clientData.total} MAD\n`;
+    if (clientData.paid > 0) text += `✅ Payé: ${clientData.paid} MAD\n`;
+    if (clientData.unpaid > 0) text += `⏳ Reste à payer: ${clientData.unpaid} MAD\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `\nMerci pour votre confiance !\nSPOTLESS — Rien ne nous échappe 🧹✨`;
+    return text;
+  }
+
+  async function handleCopyFacture(clientId: string) {
+    const text = generateFactureText(clientId);
+    await copyToClipboard(text);
+    setCopiedId(`fact-${clientId}`);
+    setTimeout(() => setCopiedId(null), 2500);
+  }
 
   // Generate billing text
   function generateBillingText(clientId: string) {
@@ -1007,6 +1137,230 @@ export default function FinancesPage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ═══ FACTURES ═══ */}
+          {tab === 'factures' && (
+            <div className="space-y-3">
+              {/* Date range + filters */}
+              <Card>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                  <Calendar size={15} className="text-accent-dark" />
+                  Période de facturation
+                </h3>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 block">Du</label>
+                    <input
+                      type="date"
+                      value={factureFrom}
+                      onChange={e => setFactureFrom(e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 block">Au</label>
+                    <input
+                      type="date"
+                      value={factureTo}
+                      onChange={e => setFactureTo(e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <Building2 size={10} /> Appartement
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={factureAptFilter}
+                        onChange={e => setFactureAptFilter(e.target.value)}
+                        className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 appearance-none bg-white cursor-pointer"
+                      >
+                        <option value="all">Tous</option>
+                        {factureApartments.map(apt => (
+                          <option key={apt} value={apt}>{apt}</option>
+                        ))}
+                      </select>
+                      {factureAptFilter !== 'all' && (
+                        <button
+                          onClick={() => setFactureAptFilter('all')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 cursor-pointer"
+                        >
+                          <X size={12} className="text-gray-400" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <Users size={10} /> Client
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={factureClientFilter}
+                        onChange={e => setFactureClientFilter(e.target.value)}
+                        className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 appearance-none bg-white cursor-pointer"
+                      >
+                        <option value="all">Tous</option>
+                        {factureClients.map(([id, name]) => (
+                          <option key={id} value={id}>{name}</option>
+                        ))}
+                      </select>
+                      {factureClientFilter !== 'all' && (
+                        <button
+                          onClick={() => setFactureClientFilter('all')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 cursor-pointer"
+                        >
+                          <X size={12} className="text-gray-400" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick period buttons */}
+                <div className="flex gap-1.5 mt-3 flex-wrap">
+                  {[
+                    { label: 'Ce mois', fn: () => { setFactureFrom(format(startOfMonth(new Date()), 'yyyy-MM-dd')); setFactureTo(format(endOfMonth(new Date()), 'yyyy-MM-dd')); } },
+                    { label: 'Mois -1', fn: () => { const lm = subMonths(new Date(), 1); setFactureFrom(format(startOfMonth(lm), 'yyyy-MM-dd')); setFactureTo(format(endOfMonth(lm), 'yyyy-MM-dd')); } },
+                    { label: 'Q1', fn: () => { const q = getQuinzaineDates(1); setFactureFrom(q.start); setFactureTo(q.end); } },
+                    { label: 'Q2', fn: () => { const q = getQuinzaineDates(2); setFactureFrom(q.start); setFactureTo(q.end); } },
+                  ].map(btn => (
+                    <button
+                      key={btn.label}
+                      onClick={btn.fn}
+                      className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-accent-bg hover:text-accent-dark transition cursor-pointer"
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Results summary */}
+              {factureLoading ? (
+                <div className="h-20 bg-white rounded-xl animate-pulse border border-gray-100" />
+              ) : factureFiltered.length === 0 ? (
+                <Card className="text-center py-8">
+                  <FileText size={24} className="mx-auto text-gray-300 mb-2" />
+                  <p className="text-sm text-gray-400">Aucun turnover sur cette période</p>
+                  <p className="text-xs text-gray-300 mt-1">Changez les dates ou les filtres</p>
+                </Card>
+              ) : (
+                <>
+                  {/* Summary bar */}
+                  <div className="flex items-center justify-between bg-accent-bg/50 rounded-xl px-4 py-2.5 border border-accent/10">
+                    <div className="text-sm text-accent-dark">
+                      <span className="font-bold">{factureFiltered.length}</span> turnover{factureFiltered.length > 1 ? 's' : ''}
+                      {' · '}
+                      <span className="font-bold">{factureByClient.length}</span> client{factureByClient.length > 1 ? 's' : ''}
+                    </div>
+                    <div className="text-sm font-bold text-accent-dark">
+                      {formatMAD(factureFiltered.reduce((s, t) => s + (Number(t.revenue) || 0), 0))}
+                    </div>
+                  </div>
+
+                  {/* Invoice per client */}
+                  {factureByClient.map(client => (
+                    <Card key={client.id} className="border-l-[3px] border-l-accent">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-bold text-text-primary flex items-center gap-1.5">
+                            <FileText size={14} className="text-accent-dark" />
+                            {client.name}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {client.turnovers.length} turnover{client.turnovers.length > 1 ? 's' : ''}
+                            {' · '}
+                            {format(parseISO(factureFrom), 'd MMM', { locale: fr })} → {format(parseISO(factureTo), 'd MMM yyyy', { locale: fr })}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleCopyFacture(client.id)}
+                          className={cn(
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer',
+                            copiedId === `fact-${client.id}`
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-accent text-white hover:bg-accent-dark'
+                          )}
+                        >
+                          {copiedId === `fact-${client.id}` ? (
+                            <><Check size={12} /> Copié !</>
+                          ) : (
+                            <><Copy size={12} /> Copier</>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Turnover list grouped by apartment */}
+                      <div className="space-y-2">
+                        {(() => {
+                          const grouped: Record<string, TurnoverRow[]> = {};
+                          for (const t of client.turnovers) {
+                            const apt = t.apartment?.name || 'Appart';
+                            if (!grouped[apt]) grouped[apt] = [];
+                            grouped[apt].push(t);
+                          }
+                          return Object.entries(grouped).map(([aptName, tos]) => {
+                            const subtotal = tos.reduce((s, t) => s + (Number(t.revenue) || 0), 0);
+                            return (
+                              <div key={aptName} className="bg-gray-50 rounded-lg p-2.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                                    <Building2 size={11} className="text-gray-400" />
+                                    {aptName}
+                                  </span>
+                                  <span className="text-xs font-bold text-gray-700">{formatMAD(subtotal)}</span>
+                                </div>
+                                {tos.map(t => {
+                                  const rev = Number(t.revenue) || 0;
+                                  return (
+                                    <div key={t.id} className="flex items-center justify-between text-xs py-0.5 pl-4">
+                                      <span className="flex items-center gap-1.5 text-gray-500">
+                                        {t.is_paid_by_client ? (
+                                          <CheckCircle size={10} className="text-emerald-500" />
+                                        ) : (
+                                          <AlertCircle size={10} className="text-amber-500" />
+                                        )}
+                                        {format(parseISO(t.date), 'dd/MM/yyyy', { locale: fr })}
+                                      </span>
+                                      <span className={cn(
+                                        'font-medium',
+                                        t.is_paid_by_client ? 'text-emerald-600' : 'text-amber-600'
+                                      )}>
+                                        {formatMAD(rev)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+
+                      {/* Client total footer */}
+                      <div className="mt-3 pt-2 border-t border-gray-200 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-700">Total</span>
+                        <div className="text-right">
+                          <span className="text-base font-bold text-accent-dark">{formatMAD(client.total)}</span>
+                          {client.unpaid > 0 && (
+                            <div className="text-[10px] text-amber-600 font-medium mt-0.5">
+                              dont {formatMAD(client.unpaid)} impayé
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </>
