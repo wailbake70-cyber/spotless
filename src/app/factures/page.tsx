@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   FileText, Calendar, Building2, Users, Copy, Check,
-  CheckCircle, AlertCircle, X, ChevronDown, Filter
+  CheckCircle, AlertCircle, X, ChevronDown, Filter,
+  Plus, Trash2, Eye, PenLine, Hash
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
@@ -13,6 +14,7 @@ import {
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+/* ─── Types ─── */
 interface TurnoverRow {
   id: string;
   date: string;
@@ -44,6 +46,21 @@ interface TurnoverRow {
   } | null;
 }
 
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+interface InvoiceLine {
+  id: string;
+  date: string;
+  description: string;
+  amount: string;
+}
+
+type MainTab = 'releves' | 'nouvelle';
+
+/* ─── Helpers ─── */
 function getQuinzaineDates(which: 1 | 2) {
   const now = new Date();
   const year = now.getFullYear();
@@ -62,7 +79,75 @@ function getQuinzaineDates(which: 1 | 2) {
   };
 }
 
+function generateInvoiceNumber(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const rand = String(Math.floor(Math.random() * 900) + 100);
+  return `SPOT-${y}${m}-${rand}`;
+}
+
+function makeEmptyLine(): InvoiceLine {
+  return {
+    id: crypto.randomUUID(),
+    date: format(new Date(), 'yyyy-MM-dd'),
+    description: '',
+    amount: '',
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════ */
 export default function FacturesPage() {
+  const [mainTab, setMainTab] = useState<MainTab>('releves');
+
+  return (
+    <div className="p-4 lg:p-6 space-y-4 max-w-3xl mx-auto pb-28 lg:pb-6">
+      {/* ── Page title ── */}
+      <div>
+        <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
+          <FileText size={24} className="text-accent-dark" />
+          Factures
+        </h1>
+      </div>
+
+      {/* ── Tab bar ── */}
+      <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+        {([
+          { key: 'releves' as MainTab, label: 'Relevés', icon: FileText },
+          { key: 'nouvelle' as MainTab, label: 'Nouvelle Facture', icon: PenLine },
+        ]).map(tab => {
+          const Icon = tab.icon;
+          const active = mainTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setMainTab(tab.key)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition cursor-pointer',
+                active
+                  ? 'bg-white text-accent-dark shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              <Icon size={15} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Tab content ── */}
+      {mainTab === 'releves' ? <RelevesTab /> : <NouvelleFactureTab />}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 1: RELEVÉS (existing invoice cards)
+   ═══════════════════════════════════════════════ */
+function RelevesTab() {
   const [dateFrom, setDateFrom] = useState(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(() => format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [aptFilter, setAptFilter] = useState<string>('all');
@@ -93,28 +178,19 @@ export default function FacturesPage() {
     setLoading(false);
   }
 
-  // Filtered data
   const filtered = useMemo(() => {
     let data = turnovers;
-    if (aptFilter !== 'all') {
-      data = data.filter(t => t.apartment?.name === aptFilter);
-    }
-    if (clientFilter !== 'all') {
-      data = data.filter(t => t.apartment?.client?.id === clientFilter);
-    }
+    if (aptFilter !== 'all') data = data.filter(t => t.apartment?.name === aptFilter);
+    if (clientFilter !== 'all') data = data.filter(t => t.apartment?.client?.id === clientFilter);
     return data;
   }, [turnovers, aptFilter, clientFilter]);
 
-  // Unique apartments for filter
   const apartments = useMemo(() => {
     const names = new Set<string>();
-    for (const t of turnovers) {
-      if (t.apartment?.name) names.add(t.apartment.name);
-    }
+    for (const t of turnovers) if (t.apartment?.name) names.add(t.apartment.name);
     return Array.from(names).sort();
   }, [turnovers]);
 
-  // Unique clients for filter
   const clients = useMemo(() => {
     const map: Record<string, string> = {};
     for (const t of turnovers) {
@@ -124,7 +200,6 @@ export default function FacturesPage() {
     return Object.entries(map).sort(([, a], [, b]) => a.localeCompare(b));
   }, [turnovers]);
 
-  // Group by client
   const byClient = useMemo(() => {
     const map: Record<string, {
       name: string;
@@ -154,17 +229,14 @@ export default function FacturesPage() {
       .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
-  // Totals
   const grandTotal = filtered.reduce((s, t) => s + (Number(t.revenue) || 0), 0);
   const grandPaid = filtered.filter(t => t.is_paid_by_client).reduce((s, t) => s + (Number(t.revenue) || 0), 0);
   const grandUnpaid = grandTotal - grandPaid;
 
-  // Period label
   const periodLabel = useMemo(() => {
     return `${format(parseISO(dateFrom), 'd MMM', { locale: fr })} → ${format(parseISO(dateTo), 'd MMM yyyy', { locale: fr })}`;
   }, [dateFrom, dateTo]);
 
-  // Generate invoice text
   function generateInvoiceText(clientId: string) {
     const clientData = byClient.find(c => c.id === clientId);
     if (!clientData) return '';
@@ -177,7 +249,6 @@ export default function FacturesPage() {
     if (aptFilter !== 'all') text += `Appartement: ${aptFilter}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    // Group by apartment
     const grouped: Record<string, TurnoverRow[]> = {};
     for (const t of clientData.turnovers) {
       const aptName = t.apartment?.name || 'Appart';
@@ -213,7 +284,6 @@ export default function FacturesPage() {
     setTimeout(() => setCopiedId(null), 2500);
   }
 
-  // Copy ALL invoices at once
   async function handleCopyAll() {
     let text = '';
     for (const client of byClient) {
@@ -228,16 +298,10 @@ export default function FacturesPage() {
   const hasActiveFilters = aptFilter !== 'all' || clientFilter !== 'all';
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-3xl mx-auto pb-28 lg:pb-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Header with period & copy all */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
-            <FileText size={24} className="text-accent-dark" />
-            Factures
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{periodLabel}</p>
-        </div>
+        <p className="text-sm text-gray-500">{periodLabel}</p>
         {byClient.length > 1 && (
           <button
             onClick={handleCopyAll}
@@ -331,10 +395,7 @@ export default function FacturesPage() {
                   ))}
                 </select>
                 {aptFilter !== 'all' && (
-                  <button
-                    onClick={() => setAptFilter('all')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 cursor-pointer"
-                  >
+                  <button onClick={() => setAptFilter('all')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 cursor-pointer">
                     <X size={12} className="text-gray-400" />
                   </button>
                 )}
@@ -356,10 +417,7 @@ export default function FacturesPage() {
                   ))}
                 </select>
                 {clientFilter !== 'all' && (
-                  <button
-                    onClick={() => setClientFilter('all')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 cursor-pointer"
-                  >
+                  <button onClick={() => setClientFilter('all')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 cursor-pointer">
                     <X size={12} className="text-gray-400" />
                   </button>
                 )}
@@ -424,11 +482,7 @@ export default function FacturesPage() {
                         : 'bg-accent text-white hover:bg-accent-dark active:scale-95'
                     )}
                   >
-                    {copiedId === client.id ? (
-                      <><Check size={13} /> Copié !</>
-                    ) : (
-                      <><Copy size={13} /> Copier</>
-                    )}
+                    {copiedId === client.id ? <><Check size={13} /> Copié !</> : <><Copy size={13} /> Copier</>}
                   </button>
                 </div>
 
@@ -497,7 +551,6 @@ export default function FacturesPage() {
                           <AlertCircle size={10} /> {formatMAD(client.unpaid)}
                         </span>
                       </div>
-                      {/* Payment progress mini bar */}
                       <div className="w-16 h-1.5 bg-amber-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-emerald-500 rounded-full"
@@ -512,6 +565,296 @@ export default function FacturesPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 2: NOUVELLE FACTURE (invoice template form)
+   ═══════════════════════════════════════════════ */
+function NouvelleFactureTab() {
+  // Client list from Supabase
+  const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
+
+  // Form state
+  const [invoiceNum, setInvoiceNum] = useState(generateInvoiceNumber);
+  const [invoiceDate, setInvoiceDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [clientName, setClientName] = useState('');
+  const [lines, setLines] = useState<InvoiceLine[]>([makeEmptyLine()]);
+  const [notes, setNotes] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Load clients on mount
+  useEffect(() => {
+    async function fetchClients() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('clients')
+        .select('id, name')
+        .order('name');
+      setClientOptions((data || []) as ClientOption[]);
+    }
+    fetchClients();
+  }, []);
+
+  // Line management
+  const addLine = useCallback(() => {
+    setLines(prev => [...prev, makeEmptyLine()]);
+  }, []);
+
+  const removeLine = useCallback((id: string) => {
+    setLines(prev => prev.length > 1 ? prev.filter(l => l.id !== id) : prev);
+  }, []);
+
+  const updateLine = useCallback((id: string, field: keyof InvoiceLine, value: string) => {
+    setLines(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+  }, []);
+
+  // Computed total
+  const total = useMemo(() => {
+    return lines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+  }, [lines]);
+
+  // Generate formatted invoice text for WhatsApp
+  const invoiceText = useMemo(() => {
+    const dateFmt = format(parseISO(invoiceDate), 'd MMMM yyyy', { locale: fr });
+
+    let text = `📄 FACTURE SPOTLESS\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `N°: ${invoiceNum}\n`;
+    text += `Date: ${dateFmt}\n`;
+    text += `Client: ${clientName || '—'}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `📋 Détails des prestations:\n\n`;
+
+    for (const line of lines) {
+      const amt = parseFloat(line.amount) || 0;
+      if (!line.description && amt === 0) continue;
+      const lineDateFmt = line.date ? format(parseISO(line.date), 'dd/MM/yyyy') : '';
+      text += `  📍 ${lineDateFmt}`;
+      if (line.description) text += ` — ${line.description}`;
+      text += `\n     💰 ${amt} MAD\n\n`;
+    }
+
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💰 TOTAL: ${total} MAD\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+
+    if (notes.trim()) {
+      text += `\n📝 ${notes.trim()}\n`;
+    }
+
+    text += `\nMerci pour votre confiance !\nSPOTLESS — Rien ne nous échappe 🧹✨`;
+    return text;
+  }, [invoiceNum, invoiceDate, clientName, lines, total, notes]);
+
+  async function handleCopy() {
+    await copyToClipboard(invoiceText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
+  function handleReset() {
+    setInvoiceNum(generateInvoiceNumber());
+    setInvoiceDate(format(new Date(), 'yyyy-MM-dd'));
+    setClientName('');
+    setLines([makeEmptyLine()]);
+    setNotes('');
+    setShowPreview(false);
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* ── Invoice header fields ── */}
+      <Card>
+        <div className="space-y-3">
+          {/* Row: Invoice # and Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <Hash size={10} /> N° Facture
+              </label>
+              <input
+                type="text"
+                value={invoiceNum}
+                onChange={e => setInvoiceNum(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <Calendar size={10} /> Date
+              </label>
+              <input
+                type="date"
+                value={invoiceDate}
+                onChange={e => setInvoiceDate(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              />
+            </div>
+          </div>
+
+          {/* Client */}
+          <div>
+            <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <Users size={10} /> Client
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={clientName}
+                onChange={e => setClientName(e.target.value)}
+                placeholder="Nom du client..."
+                list="client-datalist"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              />
+              <datalist id="client-datalist">
+                {clientOptions.map(c => (
+                  <option key={c.id} value={c.name} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ── Service lines ── */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Prestations</h3>
+          <button
+            onClick={addLine}
+            className="flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-dark transition cursor-pointer"
+          >
+            <Plus size={14} /> Ajouter
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {lines.map((line, idx) => (
+            <div key={line.id} className="bg-gray-50 rounded-lg p-3 space-y-2 relative group">
+              {/* Line number badge */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Ligne {idx + 1}</span>
+                {lines.length > 1 && (
+                  <button
+                    onClick={() => removeLine(line.id)}
+                    className="p-1 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* Date & description */}
+              <div className="grid grid-cols-[110px_1fr] gap-2">
+                <input
+                  type="date"
+                  value={line.date}
+                  onChange={e => updateLine(line.id, 'date', e.target.value)}
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                />
+                <input
+                  type="text"
+                  value={line.description}
+                  onChange={e => updateLine(line.id, 'description', e.target.value)}
+                  placeholder="Description (appart, service...)"
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                />
+              </div>
+
+              {/* Amount */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="number"
+                    value={line.amount}
+                    onChange={e => updateLine(line.id, 'amount', e.target.value)}
+                    placeholder="Montant"
+                    min="0"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 pr-14 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent font-semibold"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">MAD</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Total bar */}
+        <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
+          <span className="text-sm font-bold text-gray-700">TOTAL</span>
+          <span className="text-xl font-bold text-accent-dark">{total} MAD</span>
+        </div>
+      </Card>
+
+      {/* ── Notes ── */}
+      <Card>
+        <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1 block">
+          Notes (optionnel)
+        </label>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Ex: Payable sous 7 jours, virement bancaire..."
+          rows={2}
+          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
+        />
+      </Card>
+
+      {/* ── Preview toggle ── */}
+      <button
+        onClick={() => setShowPreview(!showPreview)}
+        className={cn(
+          'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition cursor-pointer border',
+          showPreview
+            ? 'bg-accent-bg text-accent-dark border-accent/20'
+            : 'bg-white text-gray-600 border-gray-200 hover:border-accent/30'
+        )}
+      >
+        <Eye size={16} />
+        {showPreview ? 'Masquer l\'aperçu' : 'Voir l\'aperçu'}
+      </button>
+
+      {/* ── Preview ── */}
+      {showPreview && (
+        <Card className="bg-gray-50 border-accent/20">
+          <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Aperçu WhatsApp</div>
+          <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed bg-white rounded-lg p-4 border border-gray-100 overflow-x-auto">
+            {invoiceText}
+          </pre>
+        </Card>
+      )}
+
+      {/* ── Action buttons ── */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleCopy}
+          disabled={!clientName.trim() || total === 0}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition cursor-pointer',
+            copied
+              ? 'bg-emerald-500 text-white'
+              : !clientName.trim() || total === 0
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-accent text-white hover:bg-accent-dark active:scale-[0.98]'
+          )}
+        >
+          {copied ? (
+            <><Check size={18} /> Copié !</>
+          ) : (
+            <><Copy size={18} /> Copier la facture</>
+          )}
+        </button>
+        <button
+          onClick={handleReset}
+          className="px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+          title="Réinitialiser"
+        >
+          <X size={18} />
+        </button>
+      </div>
     </div>
   );
 }
